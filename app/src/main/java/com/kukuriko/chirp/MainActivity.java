@@ -31,13 +31,14 @@ import java.io.RandomAccessFile;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_AUDIO_PERMISSION_RESULT = 12345;
-    private final int duration = 5000;
+    private final int duration = 2000;
     private final int maxRange = 10;
     private final int speedOfSound = 343;
     private final int maxDelay = (1000*maxRange)/speedOfSound;
     private final int sampleRate = 192000;
     private final int numSample = (duration * sampleRate)/1000;
     double sample[] = new double[numSample];
+    double testFreq = 8000;
     double freq1 = 18000;
     double freq2 = 23000;
     byte[] generatedSnd = new byte[2 * numSample];
@@ -169,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("Current Freq:", String.format("Freq is:  %f at loop %d of %d", instfreq, i, numSample));
             }
             //Double s = Math.pow(Math.sin(Math.PI*i/(numSample-1)),2)*Math.sin(2 * Math.PI * i / (sampleRate / instfreq));
-            Double s = Math.sin(Math.PI*freq1*i/(sampleRate));
+            Double s = Math.sin(Math.PI*testFreq*i/(sampleRate));
             sample[i] = s;
             //writeToFile(s.toString()+"\n", true);
         }
