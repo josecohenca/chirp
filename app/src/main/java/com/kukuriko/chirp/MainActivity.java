@@ -21,6 +21,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+import com.semantive.waveformandroid.waveform.Segment;
+import com.semantive.waveformandroid.waveform.WaveformFragment;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -44,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     byte[] generatedSnd = new byte[2 * numSample];
     byte[] bData;
     Handler handler = new Handler();
+    private CustomWaveformFragment customFragment;
 
     private final int SAMPLING_RATE_IN_HZ = sampleRate;
 
@@ -60,8 +63,13 @@ public class MainActivity extends AppCompatActivity {
     private final int BUFFER_SIZE = ((duration+maxDelay) * BUFFER_SIZE_FACTOR * sampleRate)/1000;
 
 
-    File path;
-    File file;
+    private static String logpath;
+    private File file;
+    private static String audioFilePath;
+
+    public static String getAudioFilePath(){
+        return audioFilePath;
+    }
 
     private void writeToFile(String data, boolean append) {
         try {
@@ -96,8 +104,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Button bt = findViewById(R.id.button);
 
-        path = this.getFilesDir();
-        file = new File(path, "log.txt");
+        logpath = this.getFilesDir()+"/log.txt";;
+        file = new File(logpath);
+        audioFilePath = this.getFilesDir()+"/voice8K16bitstereo.wav";
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -134,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-                threadPlay.start();
+                //threadPlay.start();
 
                 Thread threadRecord = new Thread(new Runnable() {
                     public void run() {
@@ -248,6 +257,14 @@ public class MainActivity extends AppCompatActivity {
         recordingThread = new Thread(new Runnable() {
             public void run() {
                 writeAudioDataToArray();
+                customFragment = new CustomWaveformFragment();
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.frameLayout, new CustomWaveformFragment())
+                        .commit();
+                //getSupportFragmentManager().beginTransaction()
+                //        .replace(R.id.frameLayout, customFragment, "waveformFragment")
+                //        .addToBackStack(null)
+                //        .commit();
             }
         }, "AudioRecorder Thread");
 
@@ -288,15 +305,19 @@ public class MainActivity extends AppCompatActivity {
         return bytes;
     }
 
-    private void setWaveFileHeader(File file, int channels) {
-        long fileSize = file.length();
-        long totalSize = fileSize + 36;
-        long byteRate = sampleRate * channels * 2; //2 byte per 1 sample for 1 channel.
 
+    private int HEADER_SIZE = 44;
+
+    private void writeWaveFile(File file, int channels, byte[] content) {
+        long fileSize = content.length; //file.length();
+        long totalSize = fileSize+HEADER_SIZE; //fileSize+36;
+        long byteRate = sampleRate * channels * 2; //2 byte per 1 sample for 1 channel.
+        byte[] header = generateHeader(fileSize, totalSize, sampleRate, channels, byteRate);
         try {
             final RandomAccessFile wavFile = randomAccessFile(file);
             wavFile.seek(0); // to the beginning
-            wavFile.write(generateHeader(fileSize, totalSize, sampleRate, channels, byteRate));
+            wavFile.write(header);
+            wavFile.write(content);
             wavFile.close();
         } catch (FileNotFoundException e) {
             Log.e("Exception", "File not found: " + e.toString());
@@ -373,35 +394,16 @@ public class MainActivity extends AppCompatActivity {
     private void writeAudioDataToArray() {
         // Write the output audio in byte
 
-        File file = new File(this.getFilesDir()+"/voice8K16bitstereo.pcm");
+
         short sData[] = new short[BUFFER_SIZE];
 
-        FileOutputStream os = null;
-        try {
-            os = new FileOutputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        //while (isRecording) {
-            // gets the voice output from microphone to byte format
-
         recorder.read(sData, 0, BUFFER_SIZE);
-        //System.out.println("Short wirting to file" + sData.toString());
-        try {
-            // // writes the data to file from buffer
-            // // stores the voice buffer
-            bData = short2byte(sData);
-            os.write(bData, 0, BUFFER_SIZE * AUDIO_FORMAT);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //}
+
+        bData = short2byte(sData);
+
+        File file = new File(audioFilePath);
+        writeWaveFile(file, AUDIO_FORMAT, bData);
+
         stopRecording();
-        try {
-            os.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        setWaveFileHeader(file, AUDIO_FORMAT);
     }
 }
