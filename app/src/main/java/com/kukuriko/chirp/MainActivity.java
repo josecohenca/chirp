@@ -306,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private int HEADER_SIZE = 44;
+    private int HEADER_SIZE = 36;
 
     private void writeWaveFile(File file, int channels, byte[] content) {
         long fileSize = content.length; //file.length();
