@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -19,10 +21,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import com.semantive.waveformandroid.waveform.Segment;
 import com.semantive.waveformandroid.waveform.WaveformFragment;
+import org.openimaj.image.DisplayUtilities;
+import org.openimaj.image.ImageUtilities;
+import org.openimaj.image.MBFImage;
+import org.openimaj.video.xuggle.XuggleAudio;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     byte[] bData;
     Handler handler = new Handler();
     private CustomWaveformFragment customFragment;
-
+    private File audiofile;
     private final int SAMPLING_RATE_IN_HZ = sampleRate;
 
     private final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
@@ -97,6 +104,55 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public static Bitmap createBitmap(MBFImage img, Bitmap bmap){
+        if (bmap == null || bmap.getWidth() != img.getWidth() || bmap.getHeight() != img.getHeight() || bmap.getConfig() != Bitmap.Config.ARGB_8888){
+            bmap = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.ARGB_8888);
+        }
+        bmap.setPixels(img.toPackedARGBPixels(), 0, img.getWidth(), 0, 0, img.getWidth(), img.getHeight());
+        return bmap;
+    }
+
+    public static MBFImage createMBFImage(Bitmap image, boolean alpha){
+        final int[] data = new int[image.getHeight()*image.getWidth()];
+        image.getPixels(data, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+        return new MBFImage(data, image.getWidth(), image.getHeight(), alpha);
+    }
+
+    public static void viewImage(MBFImage img, ImageView view){
+        Bitmap image = createBitmap(img, null);
+        view.setImageBitmap(image);
+    }
+
+    private void drawImage(String filepath){
+        final XuggleAudio a = new XuggleAudio( filepath );
+
+        // This is how wide we're going to draw the display
+        final int w = 1920;
+
+        // This is how high we'll draw the display
+        final int h = 200;
+
+        final MBFImage img = org.openimaj.vis.audio.AudioOverviewVisualisation.
+                getAudioWaveformImage( a, w, h, new Float[]{0f,0f,0f,1f},
+                        new Float[]{1f,1f,1f,1f} );
+        ImageView myImage = (ImageView) findViewById(R.id.imageView1);
+        viewImage(img, myImage);
+        //// Display the image
+        //DisplayUtilities.display( img );
+//
+        // File f = new File("audioWaveform.png");
+        //// Write the image to a file.
+        //try
+        //{
+        //    ImageUtilities.write( img, "png", f );
+        //}
+        //catch( final IOException e )
+        //{
+        //    e.printStackTrace();
+        //}
+
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -257,13 +313,13 @@ public class MainActivity extends AppCompatActivity {
         recordingThread = new Thread(new Runnable() {
             public void run() {
                 writeAudioDataToArray();
-                customFragment = new CustomWaveformFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.frameLayout, new CustomWaveformFragment())
-                        .commit();
+                drawImage(audiofile.getAbsolutePath());
+
+                //customFragment = new CustomWaveformFragment();
                 //getSupportFragmentManager().beginTransaction()
-                //        .replace(R.id.frameLayout, customFragment, "waveformFragment")
-                //        .addToBackStack(null)
+                //        .add(R.id.frameLayout, new CustomWaveformFragment())
+                ////        .replace(R.id.frameLayout, customFragment, "waveformFragment")
+                ////        .addToBackStack(null)
                 //        .commit();
             }
         }, "AudioRecorder Thread");
@@ -401,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
 
         bData = short2byte(sData);
 
-        File file = new File(audioFilePath);
+        audiofile = new File(audioFilePath);
         writeWaveFile(file, AUDIO_FORMAT, bData);
 
         stopRecording();
