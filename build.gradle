@@ -5,8 +5,8 @@ buildscript {
         google()
         jcenter()
         maven { url "https://jitpack.io" }
-        maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
-        maven { url "http://maven.openimaj.org" }
+        //maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
+        //maven { url "http://maven.openimaj.org" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.3'
@@ -20,8 +20,8 @@ allprojects {
         google()
         jcenter()
         maven { url "https://jitpack.io" }
-        maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
-        maven { url "http://maven.openimaj.org" }
+        //maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
+        //maven { url "http://maven.openimaj.org" }
     }
 }
 
