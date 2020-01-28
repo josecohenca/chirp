@@ -134,6 +134,11 @@ public class MainActivity extends AppCompatActivity {
     private int[][] prevPeakIndex;
 
 
+    public enum WaveType {
+        SINE,
+        CHIRP
+    }
+
     public static final float FREQ_LP_BEAT = 150.0f;
     public static final float T_FILTER = (float) (1.0f / (2.0f * Math.PI * FREQ_LP_BEAT));
     public static final float BEAT_RTIME = 0.02f;
@@ -186,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
     private static String audioFilePath;
     private File imageFile;
     private static String imageFilePath;
+
+    private WaveType waveType = WaveType.CHIRP;
 
     public static String getAudioFilePath(){
         return audioFilePath;
@@ -613,6 +620,7 @@ public class MainActivity extends AppCompatActivity {
         toggleSpectrogram = findViewById(R.id.button5);
         toggleApplyFilter = findViewById(R.id.button6);
         toggleConvolveWithOrig = findViewById(R.id.button7);
+        toggleEnvelope = findViewById(R.id.button8);
         loopSpinner = findViewById(R.id.loop_spinner);
         chart1 = findViewById(R.id.chart1);
         chart2 = findViewById(R.id.chart2);
@@ -659,6 +667,14 @@ public class MainActivity extends AppCompatActivity {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+
+
+        toggleChart.setChecked(false);
+        toggleSpectrogram.setChecked(false);
+        toggleApplyFilter.setChecked(false);
+        toggleConvolveWithOrig.setChecked(false);
+        toggleEnvelope.setChecked(false);
+
 
         loopSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -748,12 +764,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-        toggleChart.setChecked(false);
-        toggleSpectrogram.setChecked(false);
-        toggleApplyFilter.setChecked(false);
-        toggleConvolveWithOrig.setChecked(false);
-        toggleEnvelope.setChecked(false);
     }
 
 
@@ -870,8 +880,14 @@ public class MainActivity extends AppCompatActivity {
             //if ((i % 1000) == 0) {
             //    Log.i("Current Freq:", String.format("Freq is:  %f at loop %d of %d", instfreq, i, numSample));
             //}
-            //Double s = Math.pow(Math.sin(Math.PI*i/(numSample-1)),2)*Math.sin(2 * Math.PI * i / (sampleRate / instfreq));
-            Double s = Math.sin(Math.PI*testFreq*i/SAMPLING_RATE_IN_HZ);
+            Double s = 0.0;
+
+            if(waveType==WaveType.SINE) {
+                s = Math.pow(Math.sin(Math.PI * i / (numSample - 1)), 2) * Math.sin(2 * Math.PI * i / (SAMPLING_RATE_IN_HZ / instfreq));
+            }
+            else if (waveType==WaveType.CHIRP)
+                s = Math.sin(Math.PI*testFreq*i/SAMPLING_RATE_IN_HZ);
+
             sample[i] = s;
             //writeToFile(s.toString()+"\n", true);
         }
