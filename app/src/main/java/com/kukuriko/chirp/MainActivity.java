@@ -680,7 +680,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
                 loopSpinnerSelection = Integer.parseInt((String)parent.getItemAtPosition(position));
-                calculateCurrentLoopVal();
+                //calculateCurrentLoopVal();
             }
 
             @Override
@@ -710,7 +710,7 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     isToggleChart=true;
-                    drawWaveChart(oData);
+                    //drawWaveChart(oData);
                 } else {
                     isToggleChart=false;
                     chart1.clear();
@@ -724,7 +724,7 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     isToggleSpectrogram=true;
-                    drawSpectrogramChart(specData);
+                    //drawSpectrogramChart(specData);
                 } else {
                     isToggleSpectrogram=false;
                     chart3.clear();
@@ -740,6 +740,10 @@ public class MainActivity extends AppCompatActivity {
                     isToggleApplyFilter=true;
                 } else {
                     isToggleApplyFilter=false;
+                    chart1.clear();
+                    if(oData.length>1) chart2.clear();
+                    chart3.clear();
+                    if(specData.length>1) chart4.clear();
                 }
             }
         });
@@ -750,6 +754,10 @@ public class MainActivity extends AppCompatActivity {
                     isToggleConvolveWithOrig=true;
                 } else {
                     isToggleConvolveWithOrig=false;
+                    chart1.clear();
+                    if(oData.length>1) chart2.clear();
+                    chart3.clear();
+                    if(specData.length>1) chart4.clear();
                 }
             }
         });
@@ -760,6 +768,10 @@ public class MainActivity extends AppCompatActivity {
                     isToggleEnvelope=true;
                 } else {
                     isToggleEnvelope=false;
+                    chart1.clear();
+                    if(oData.length>1) chart2.clear();
+                    chart3.clear();
+                    if(specData.length>1) chart4.clear();
                 }
             }
         });
@@ -775,24 +787,14 @@ public class MainActivity extends AppCompatActivity {
 
             Thread threadPlay = new Thread(new Runnable() {
                 public void run() {
-                    handler.post(new Runnable() {
-                        public void run() {
-                            playSound();
-                        }
-                    });
-
+                    playSound();
                 }
             });
             threadPlay.start();
 
             Thread threadRecord = new Thread(new Runnable() {
                 public void run() {
-                    handler.post(new Runnable() {
-                        public void run() {
-                            startRecording();
-                        }
-                    });
-
+                    startRecording();
                 }
             });
             threadRecord.start();
@@ -820,15 +822,14 @@ public class MainActivity extends AppCompatActivity {
                 final float y = (sData[i * numChannels + c]) / floatScale;
                 oData[c][i]=y;
             }
-
         }
 
         this.ft.process( sData );
         float[][] fftData = this.ft.getLastFFT();
         specData = new float[numChannels][];
-        for (int c = 0; c < numChannels / 4; c++) {
-            specData[c] = new float[fftData.length / 4];
-            for (int i = 0; i < fftData.length / 4; i++) {
+        for (int c = 0; c < numChannels; c++) {
+            specData[c] = new float[fftData[c].length / 4];
+            for (int i = 0; i < fftData[c].length / 4; i++) {
                 final float re = fftData[c][i * 2];
                 final float im = fftData[c][i * 2 + 1];
                 specData[c][i] = (float) Math.log(Math.sqrt(re * re + im * im) + 1) / 50f;
@@ -882,10 +883,10 @@ public class MainActivity extends AppCompatActivity {
             //}
             Double s = 0.0;
 
-            if(waveType==WaveType.SINE) {
+            if(waveType==WaveType.CHIRP) {
                 s = Math.pow(Math.sin(Math.PI * i / (numSample - 1)), 2) * Math.sin(2 * Math.PI * i / (SAMPLING_RATE_IN_HZ / instfreq));
             }
-            else if (waveType==WaveType.CHIRP)
+            else if (waveType==WaveType.SINE)
                 s = Math.sin(Math.PI*testFreq*i/SAMPLING_RATE_IN_HZ);
 
             sample[i] = s;
@@ -964,13 +965,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        recordingThread = new Thread(new Runnable() {
-            public void run() {
-                writeAudioDataToArray();
-            }
-        }, "AudioRecorder Thread");
-
-        recordingThread.start();
+        writeAudioDataToArray();
     }
 
     private void stopRecording() {
@@ -1135,9 +1130,9 @@ public class MainActivity extends AppCompatActivity {
         this.ft.process( sData );
         float[][] fftData = this.ft.getLastFFT();
         specData = new float[numChannels][];
-        for (int c = 0; c < numChannels / 4; c++) {
-            specData[c] = new float[fftData.length / 4];
-            for (int i = 0; i < fftData.length / 4; i++) {
+        for (int c = 0; c < numChannels; c++) {
+            specData[c] = new float[fftData[c].length / 4];
+            for (int i = 0; i < fftData[c].length / 4; i++) {
                 final float re = fftData[c][i * 2];
                 final float im = fftData[c][i * 2 + 1];
                 specData[c][i] = (float) Math.log(Math.sqrt(re * re + im * im) + 1) / 50f;
@@ -1159,9 +1154,9 @@ public class MainActivity extends AppCompatActivity {
         this.ft.process( sData );
         float[][] fftData = this.ft.getLastFFT();
         specData = new float[numChannels][];
-        for (int c = 0; c < numChannels / 4; c++) {
-            specData[c] = new float[fftData.length / 4];
-            for (int i = 0; i < fftData.length / 4; i++) {
+        for (int c = 0; c < numChannels; c++) {
+            specData[c] = new float[fftData[c].length / 4];
+            for (int i = 0; i < fftData[c].length / 4; i++) {
                 final float re = fftData[c][i * 2];
                 final float im = fftData[c][i * 2 + 1];
                 specData[c][i] = (float) Math.log(Math.sqrt(re * re + im * im) + 1) / 50f;

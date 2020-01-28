@@ -65,12 +65,13 @@ public class FourierTransform
             // Perform the FFT (using jTransforms)
             fft.complexForward( this.lastFFT[c] );
 
-            if( this.normalise )
-                this.normaliseReals( sizeOfFFT );
 
 //			System.out.println( "FFT Output (channel "+c+"): " );
 //			System.out.println( Arrays.toString( this.lastFFT[c] ));
         }
+
+        if( this.normalise )
+            this.normaliseReals( sizeOfFFT );
 
         return sb;
     }

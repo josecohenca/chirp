@@ -10,11 +10,12 @@
     <LinearLayout
         android:id="@+id/LinearLayout01"
         android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent">
         <Button
             android:id="@+id/button1"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Start" />
@@ -32,43 +33,43 @@
             android:text="Draw Fragment" /-->
         <ToggleButton
             android:id="@+id/button4"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Draw Chart" />
         <ToggleButton
             android:id="@+id/button5"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Draw Spect" />
         <ToggleButton
             android:id="@+id/button6"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Apply Filter" />
         <ToggleButton
             android:id="@+id/button7"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Autocorrelation" />
         <ToggleButton
             android:id="@+id/button8"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Envelope" />
         <Spinner
             android:id="@+id/loop_spinner"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
     </LinearLayout>
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/scrollView0"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:overScrollMode="always"
         android:isScrollContainer="true"
         android:scrollbarAlwaysDrawVerticalTrack="true"
@@ -79,7 +80,7 @@
         <LinearLayout
             android:id="@+id/LinearLayout02"
             android:layout_height="wrap_content"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:orientation="vertical"
             app:layout_constraintTop_toTopOf="parent">
             <ImageView
@@ -97,26 +98,26 @@
                 app:layout_constraintLeft_toLeftOf="parent"/>
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/chart1"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/frameLayout"
                 app:layout_constraintLeft_toLeftOf="parent" />
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/chart2"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/chart1"
                 app:layout_constraintLeft_toLeftOf="parent" />
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/chart3"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/chart2"
                 app:layout_constraintLeft_toLeftOf="parent" />
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/chart4"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/chart3"
                 app:layout_constraintLeft_toLeftOf="parent" />
         </LinearLayout>
