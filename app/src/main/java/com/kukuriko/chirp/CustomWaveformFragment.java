@@ -16,7 +16,7 @@ public class CustomWaveformFragment extends WaveformFragment {
      */
     @Override
     protected String getFileName() {
-        return MainActivity.getAudioFilePath();
+        return MainService.getAudioFilePath();
     }
 
 

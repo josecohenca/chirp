@@ -1,3 +1,49 @@
 <resources>
     <string name="app_name">chirp</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="draw_wave_chart">Draw Wave Chart</string>
+    <string name="draw_wave_chart_key">draw_wave_chart_key</string>
+
+    <string name="draw_spec_chart">Draw Spectrogram Chart</string>
+    <string name="draw_spec_chart_key">draw_spec_chart_key</string>
+
+    <string name="apply_filter">Apply Filter</string>
+    <string name="apply_filter_key">apply_filter_key</string>
+
+    <string name="loop_key">loop_key</string>
+    <string name="loop">Iteration number</string>
+
+    <string name="max_loops_key">max_loops_key</string>
+    <string name="max_loops">Max Loops</string>
+
+    <string name="wave_type">Wave Type</string>
+    <string name="wave_type_key">wave_type_key</string>
+
+
+    <string name="file_key">file_key</string>
+    <string name="file">File output</string>
+
+    <string name="apply_convolution">Apply Convolution</string>
+    <string name="apply_convolution_key">apply_convolution_key</string>
+
+    <string name="apply_envelope">Apply Envelope</string>
+    <string name="apply_envelope_key">apply_envelope_key</string>
+
+    <!-- Preference Titles -->
+    <string name="general_settings_header">General</string>
+    <string name="file_header">File Settings</string>
+
+    <!-- Messages Preferences -->
+    <string name="signature_title">Your signature</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
 </resources>
