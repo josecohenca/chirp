@@ -71,22 +71,16 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_AUDIO_PERMISSION_RESULT = 12345;
-    private static final int duration = 500;
-    private static final int maxRange = 10;
-    private static final int speedOfSound = 343;
-    private static final int maxDelayRTT = 2*(1000*maxRange)/speedOfSound;
-    private static final int SAMPLING_RATE_IN_HZ = 192000;
-    private static final int numSample = duration * SAMPLING_RATE_IN_HZ / 1000;
     private static final int numChannels = 2;
 
     protected static String mainActivity_NotificationStr="mainActivity_NotificationStr";
 
-    protected static double sample[] = new double[numSample];
-    protected static byte[] generatedSnd = new byte[numChannels * numSample];
+    protected static double[] sample;
+    protected static byte[] generatedSnd;
 
 
     protected static int maxLoops = 10;
-    protected static ArrayBlockingQueue<short[]> allData = new ArrayBlockingQueue<>(maxLoops);
+    protected static ArrayBlockingQueue<short[]> allData;
 
     protected static byte[] bData;
     protected static short[] sData;
@@ -156,51 +150,6 @@ public class MainActivity extends AppCompatActivity {
     protected static double deviceHeight;
     protected static double deviceWidth;
 
-    public static short[] getSignalData(){
-        return sData;
-    }
-
-    public static float[][] getOutputData(){
-        return oData;
-    }
-
-    public static float[][] getSpecData(){
-        return specData;
-    }
-
-    public static ArrayBlockingQueue<short[]> getAlData(){
-        return allData;
-    }
-
-
-    protected static void playSound () {
-        AudioTrack audioTrack = null;
-        try {
-            //audioTrack = new AudioTrack(AudioManager.STREAM_ALARM, SAMPLING_RATE_IN_HZ, AudioFormat.CHANNEL_OUT_FRONT_CENTER, AudioFormat.ENCODING_PCM_16BIT, generatedSnd.length, AudioTrack.MODE_STATIC);
-            audioTrack = new AudioTrack.Builder()
-                    .setAudioAttributes(new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
-                            .build())
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(SAMPLING_RATE_IN_HZ)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build())
-                    .setBufferSizeInBytes(MainActivity.generatedSnd.length)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
-                    .build();
-
-            audioTrack.write(MainActivity.generatedSnd, 0, MainActivity.generatedSnd.length);
-            audioTrack.play();
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -249,33 +198,6 @@ public class MainActivity extends AppCompatActivity {
         deviceHeight = inch2mFactor*mHeightPixels/displayMetrics.ydpi;
     }
 
-    public static short minValue(final short[] arr) {
-        if (arr.length < 0)
-            return 0;
-
-        short min = arr[0];
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] < min) {
-                min = arr[i];
-            }
-        }
-
-        return min;
-    }
-
-    public static short maxValue(final short[] arr) {
-        if (arr.length < 0)
-            return 0;
-
-        short max = arr[0];
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] > max) {
-                max = arr[i];
-            }
-        }
-
-        return max;
-    }
 /*
     private void drawImageBmp() {
         Log.d("drawImageBmp", "Started process");
@@ -356,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
                 //        .addToBackStack(null)
                 .commit();
     }
-*/
+
     private class LineChartListener implements OnChartValueSelectedListener {
         @Override
         public void onValueSelected(Entry e, Highlight h) {
@@ -370,6 +292,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("Nothing selected", "Nothing selected.");
         }
     }
+*/
 
     private void setupChartStyle(LineChart c){
 
