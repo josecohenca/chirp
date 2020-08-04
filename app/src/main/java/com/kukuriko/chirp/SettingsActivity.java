@@ -134,7 +134,7 @@ public class SettingsActivity extends AppCompatActivity {
 
             Preference testFreqPref = findPreference(TESTFREQ_KEY);
             testFreqPref.setDefaultValue(testFreqValue);
-            bindPreferenceSummaryToValueString(testFreqPref,"1");
+            bindPreferenceSummaryToValueString(testFreqPref,"4000");
 
             //ListPreference iteration = findPreference(LOOP_KEY);
             //setListPreferenceData(iteration);
@@ -234,7 +234,7 @@ public class SettingsActivity extends AppCompatActivity {
                 if (preference.getKey().equals(TESTFREQ_KEY)) {
                     // update the changed gallery name to summary filed
                     preference.setSummary(stringValue);
-                    testFreqValue = ((Integer) newValue).intValue();
+                    testFreqValue = Integer.parseInt(stringValue);
                 }
             } else if (preference instanceof DropDownPreference) {
                 //if (preference.getKey().equals(MAX_LOOP_KEY)) {
