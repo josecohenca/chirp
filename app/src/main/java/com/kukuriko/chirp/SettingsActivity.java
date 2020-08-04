@@ -1,5 +1,6 @@
 package com.kukuriko.chirp;
 
+import android.content.SharedPreferences;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -27,6 +28,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static String APPLY_CONV_KEY;
     private static String APPLY_ENV_KEY;
     private static String DROPDOWN_KEY;
+    private static String TESTFREQ_KEY;
     //private static String LOOP_KEY;
     //private static String MAX_LOOP_KEY;
     private static boolean drawWaveCheck = false;
@@ -35,6 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static boolean applyConvCheck = false;
     private static boolean applyEnvCheck = false;
     private static int dropDownValue = 0;
+    private static int testFreqValue = 4000;
     //private static int iterationNumber = 0;
     //private static int maxLoops = 10;
 
@@ -62,6 +65,10 @@ public class SettingsActivity extends AppCompatActivity {
         return dropDownValue;
     }
 
+    public static int getTestFreqValue(){
+        return testFreqValue;
+    }
+
     //public static int getIterationNumber(){
     //    return iterationNumber;
     //}
@@ -81,6 +88,7 @@ public class SettingsActivity extends AppCompatActivity {
         APPLY_CONV_KEY=getString(R.string.apply_convolution_key);
         APPLY_ENV_KEY=getString(R.string.apply_envelope_key);
         DROPDOWN_KEY=getString(R.string.wave_type_key);
+        TESTFREQ_KEY=getString(R.string.test_freq_key);
         //LOOP_KEY=getString(R.string.loop_key);
         //MAX_LOOP_KEY=getString(R.string.max_loops_key);
 
@@ -102,27 +110,31 @@ public class SettingsActivity extends AppCompatActivity {
 
             Preference drawWave = findPreference(DRAW_WAVE_KEY);
             drawWave.setDefaultValue(drawWaveCheck);
-            bindPreferenceSummaryToValue(drawWave);
+            bindPreferenceSummaryToValueBoolean(drawWave,false);
 
             Preference drawSpec = findPreference(DRAW_SPEC_KEY);
             drawSpec.setDefaultValue(drawSpecCheck);
-            bindPreferenceSummaryToValue(drawSpec);
+            bindPreferenceSummaryToValueBoolean(drawSpec,false);
 
             Preference applyFilter = findPreference(APPLY_FILTER_KEY);
             applyFilter.setDefaultValue(applyFilterCheck);
-            bindPreferenceSummaryToValue(applyFilter);
+            bindPreferenceSummaryToValueBoolean(applyFilter,false);
 
             Preference applyConvolution = findPreference(APPLY_CONV_KEY);
             applyConvolution.setDefaultValue(applyConvCheck);
-            bindPreferenceSummaryToValue(applyConvolution);
+            bindPreferenceSummaryToValueBoolean(applyConvolution,false);
 
             Preference applyEnvelope = findPreference(APPLY_ENV_KEY);
             applyEnvelope.setDefaultValue(applyEnvCheck);
-            bindPreferenceSummaryToValue(applyEnvelope);
+            bindPreferenceSummaryToValueBoolean(applyEnvelope,false);
 
             Preference dropdown = findPreference(DROPDOWN_KEY);
             dropdown.setDefaultValue(dropDownValue);
-            bindPreferenceSummaryToValue(dropdown);
+            bindPreferenceSummaryToValueString(dropdown,"1");
+
+            Preference testFreqPref = findPreference(TESTFREQ_KEY);
+            testFreqPref.setDefaultValue(testFreqValue);
+            bindPreferenceSummaryToValueString(testFreqPref,"1");
 
             //ListPreference iteration = findPreference(LOOP_KEY);
             //setListPreferenceData(iteration);
@@ -159,13 +171,24 @@ public class SettingsActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private static void bindPreferenceSummaryToValue(Preference preference) {
+    private static void bindPreferenceSummaryToValueString(Preference preference, String defaultValue) {
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+        SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(preference.getContext());
+        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, p.getString(preference.getKey(), defaultValue));
+    }
+
+    private static void bindPreferenceSummaryToValueBoolean(Preference preference, Boolean defaultValue) {
+        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+
+        SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(preference.getContext());
+        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, p.getBoolean(preference.getKey(), defaultValue));
+    }
+    private static void bindPreferenceSummaryToValueInt(Preference preference, Integer defaultValue) {
+        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+
+        SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(preference.getContext());
+        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, p.getInt(preference.getKey(), defaultValue));
     }
 
 
@@ -208,11 +231,11 @@ public class SettingsActivity extends AppCompatActivity {
 
 
             } else if (preference instanceof EditTextPreference) {
-                //if (preference.getKey().equals(MAX_LOOP_KEY)) {
-                //    // update the changed gallery name to summary filed
-                //    preference.setSummary(stringValue);
-                //    maxLoops=((Integer) newValue).intValue();
-                //}
+                if (preference.getKey().equals(TESTFREQ_KEY)) {
+                    // update the changed gallery name to summary filed
+                    preference.setSummary(stringValue);
+                    testFreqValue = ((Integer) newValue).intValue();
+                }
             } else if (preference instanceof DropDownPreference) {
                 //if (preference.getKey().equals(MAX_LOOP_KEY)) {
                 //    // update the changed gallery name to summary filed

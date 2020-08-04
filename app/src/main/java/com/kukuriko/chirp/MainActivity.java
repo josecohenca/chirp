@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected static double oldMean = 0;
     protected static double lambda = 0.3;
+    protected static double detectionLambda = 0.5;
 
     protected static float[] distanceCorrection;
 

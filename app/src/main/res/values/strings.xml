@@ -22,6 +22,12 @@
     <string name="wave_type">Wave Type</string>
     <string name="wave_type_key">wave_type_key</string>
 
+    <string name="test_freq">Test Freq</string>
+    <string name="test_freq_key">test_freq_key</string>
+
+    <string name="remote_service_started">Service started</string>
+    <string name="local_service_label">Obstacle Detection Service</string>
+
 
     <string name="file_key">file_key</string>
     <string name="file">File output</string>

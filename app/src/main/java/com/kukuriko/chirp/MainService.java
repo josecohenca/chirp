@@ -1,5 +1,9 @@
 package com.kukuriko.chirp;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -17,6 +21,8 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import androidx.core.app.NotificationCompat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,7 +55,7 @@ public class MainService extends Service {
     private final int recordingDuration = duration + maxDelayRTT;
     private final int BUFFER_SIZE = recordingDuration * numChannels * SAMPLING_RATE_IN_HZ / 1000;
 
-    double freq1 = 18000;
+    double freq1 = 8000;
     double freq2 = 23000;
     double testFreq = freq1;//8000;
     double guardFreq = 100;
@@ -63,6 +69,13 @@ public class MainService extends Service {
     public static final float BEAT_RTIME = 0.02f;
 
 
+    public static final String NOTIFICATION = "com.kukuriko.chirp.MainService";
+    private String notifChannelId = "my_channel_chirp";
+    private static int FOREGROUND_ID = 11338;
+    private NotificationManager mNotificationManager;
+    private NotificationChannel mChannel;
+    private Notification notification;
+
     private File audioFile;
     private static String audioFilePath;
     private File imageFile;
@@ -73,12 +86,17 @@ public class MainService extends Service {
     }
 
     private FourierTransform ft;
+    private FFTBandPassFilter bpfft;
     private BandPassFilter bp;
 
     public enum WaveType {
         SINE,
         CHIRP
     }
+
+    private double accDetection = 0;
+
+    private Context myContext;
 
     private WaveType waveType = WaveType.SINE;
 
@@ -91,18 +109,56 @@ public class MainService extends Service {
 
     @Override
     public void onCreate() {
-        audioFilePath = this.getFilesDir()+"/voice8K16bitstereo.wav";
-        imageFilePath = this.getFilesDir()+"/voice8K16bitstereo.png";
-        MainActivity.allData = new ArrayBlockingQueue<>(MainActivity.maxLoops);
-        MainActivity.sample = new double[numSample];
-        MainActivity.generatedSnd = new byte[numChannels * numSample];
+        myContext = this.getApplicationContext();
+        mNotificationManager = (NotificationManager) myContext.getApplicationContext().getSystemService(NOTIFICATION_SERVICE);
 
         Log.i(TAG, "Service onCreate");
+
+        CharSequence text = getText(R.string.remote_service_started);
+        int importance = NotificationManager.IMPORTANCE_LOW;
+        if (Build.VERSION.SDK_INT >= 26) {
+            mChannel = new NotificationChannel(notifChannelId, text, importance);
+            mNotificationManager.createNotificationChannel(mChannel);
+        }
+
+
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(), 0);
+
+        // Set the info for the views that show in the notification panel.
+
+        notification = new NotificationCompat.Builder(this, notifChannelId)
+                .setSmallIcon(R.drawable.ic_action_name)  // the status icon
+                .setTicker(text)  // the status text
+                .setOngoing(true)
+                .setWhen(System.currentTimeMillis())  // the time stamp
+                .setContentTitle(getText(R.string.local_service_label))  // the label of the entry
+                .setContentText(text)  // the contents of the entry
+                .setContentIntent(contentIntent)  // The intent to send when the entry is clicked
+                .build();
+
+
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, final int startId) {
         Log.i(TAG, "Service onStartCommand");
+
+        MainActivity.allData = new ArrayBlockingQueue<>(MainActivity.maxLoops);
+        MainActivity.sample = new double[numSample];
+        MainActivity.generatedSnd = new byte[numChannels * numSample];
+        accDetection = 0;
+        audioFilePath = this.getFilesDir()+"/voice8K16bitstereo.wav";
+        imageFilePath = this.getFilesDir()+"/voice8K16bitstereo.png";
+
+        // Start foreground service.
+        startForeground(FOREGROUND_ID, notification);
+        Log.i(TAG, "Start foreground");
+
+        mNotificationManager.notify(FOREGROUND_ID, notification);
+
+        ft = new FourierTransform(numChannels);
+        bpfft = new FFTBandPassFilter((int)freq2,(int)freq1,(float)nyqRate,numChannels);
+        bp = new BandPassFilter( filterSize, (float)((freq2+guardFreq)/nyqRate), (float)((freq1-guardFreq)/nyqRate), numChannels, true);
 
         isRecording=true;
         waveType=WaveType.values()[SettingsActivity.getDropDownValue()];
@@ -127,6 +183,8 @@ public class MainService extends Service {
     public void onDestroy() {
         isRecording=false;
         Log.i( TAG,  "Service onDestroy");
+        mNotificationManager.cancel(FOREGROUND_ID);
+        stopForeground(true);
     }
 
 
@@ -158,12 +216,18 @@ public class MainService extends Service {
                 e.printStackTrace();
             }
 
-            if(loop%20==0)
-                calculateCurrentLoopVal();
+            calculateCurrentLoopVal();
+
+            if(loop%100==0) {
+                updateGraphsBroadcast();
+                loop=0;
+            }
+
             loop++;
+            break;
         }
 
-        calculateCurrentLoopVal();
+        updateGraphsBroadcast();
 
         serviceFinished=true;
     }
@@ -199,77 +263,39 @@ public class MainService extends Service {
     }
 
     private void calculateCurrentLoopVal(){
+
         MainActivity.sData = MainActivity.allData.peek();
 
-        MainActivity.oData = new float[numChannels][];
-        for( int c = 0; c < numChannels; c++ ) {
-            MainActivity.oData[c] = new float[MainActivity.sData.length/numChannels];
-            for (int i = 0; i < MainActivity.sData.length/numChannels; i += numChannels) {
-                final float y = (MainActivity.sData[i * numChannels + c]) / floatScale;
-                MainActivity.oData[c][i]=y;
-            }
-        }
-
-        ft=new FourierTransform(numChannels);
-        bp = new BandPassFilter( filterSize, (float)((freq2+guardFreq)/nyqRate), (float)((freq1-guardFreq)/nyqRate), numChannels, true);
-
-        ft.process( MainActivity.sData );
-        MainActivity.specData = this.ft.getPowerMagnitudes();
-
-        int accDetection = 0;
-        short[][] aData = (short[][])MainActivity.allData.toArray();
-        if (SettingsActivity.getApplyFilterCheck()) applyFilter(MainActivity.sData);
-        if (SettingsActivity.getApplyConvCheck()) applyCorrelation(MainActivity.sData);
+        if (SettingsActivity.getApplyFilterCheck()) applyFilter();
+        if (SettingsActivity.getApplyConvCheck()) applyCorrelation();
         if (SettingsActivity.getApplyEnvCheck()){
-            if(aData.length>1) {
-                for (int i = 0; i < aData.length; i++) {
-                    if (applyEnvelope(aData[i]))
-                        accDetection++;
-                }
+            accDetection = MainActivity.detectionLambda*accDetection + (1-MainActivity.detectionLambda)*(applyEnvelope() ? 1 : 0);
+
+            if (accDetection >= 0.5) {
+                Toast.makeText(this, "Obstacle!",
+                        Toast.LENGTH_SHORT).show();
             }
-        }
 
-        if(aData.length>= 9 && accDetection >= 5){
-            Toast.makeText(this, "Obstacle!",
-                    Toast.LENGTH_SHORT).show();
         }
-        updateGraphsBroadcast();
-
     }
 
 
+    private void applyFilter(){
+        //MainActivity.sData = bp.process( MainActivity.sData, numChannels );
 
-    private void applyFilter(short[] myData){
-        MainActivity.sData = bp.process( myData, numChannels );
-        MainActivity.oData = new float[numChannels][];
-        for( int c = 0; c < numChannels; c++ ) {
-            MainActivity.oData[c] = new float[MainActivity.sData.length/numChannels];
-            for (int i = 0; i < MainActivity.sData.length/numChannels; i += numChannels) {
-                MainActivity.oData[c][i] = MainActivity.sData[i * numChannels + c];
-            }
-        }
-
-        ft.process( MainActivity.sData );
-        MainActivity.specData = this.ft.getPowerMagnitudes();
+        MainActivity.sData = bpfft.processSample( MainActivity.sData, SAMPLING_RATE_IN_HZ, numChannels );
     }
 
-    private void applyCorrelation(short[] myData){
-        MainActivity.sData = MyUtils.convertDoubleShort(Convolution.correlate(MyUtils.convertShortDouble(myData),
+    private void applyCorrelation(){
+        //MainActivity.sData = MyUtils.convertDoubleShort(Convolution.correlate(MyUtils.convertShortDouble(MainActivity.sData),
+        //        MyUtils.convertShortDouble(byte2short(MainActivity.generatedSnd)), numChannels));
+        // apply fft correlation
+        MainActivity.sData = MyUtils.convertDoubleShort(Convolution.fftLinearConvolution(MyUtils.convertShortDouble(MainActivity.sData),
                 MyUtils.convertShortDouble(byte2short(MainActivity.generatedSnd)), numChannels));
-        MainActivity.oData = new float[numChannels][];
-        for( int c = 0; c < numChannels; c++ ) {
-            MainActivity.oData[c] = new float[MainActivity.sData.length/numChannels];
-            for (int i = 0; i < MainActivity.sData.length/numChannels; i += numChannels) {
-                MainActivity.oData[c][i] = (float)MainActivity.sData[i * numChannels + c];
-            }
-        }
-
-        ft.process( MainActivity.sData );
-        MainActivity.specData = this.ft.getPowerMagnitudes();
     }
 
 
-    private boolean applyEnvelope(short[] myData){
+    private boolean applyEnvelope(){
         boolean ret = false;
 
         float input;
@@ -284,9 +310,9 @@ public class MainService extends Service {
         float beatRelease = (float) Math.exp( -1.0f / (SAMPLING_RATE_IN_HZ * BEAT_RTIME) );
         float distFactor = speedOfSound/SAMPLING_RATE_IN_HZ;
         int peakNum;
-        double mean = MyUtils.calculateMean(MyUtils.convertShortDouble(myData));
+        double mean = MyUtils.calculateMean(MyUtils.convertShortDouble(MainActivity.sData));
 
-        if(MainActivity.oldMean==0) MainActivity.oldMean=mean;
+        if(MainActivity.oldMean==0 || MainActivity.oldMean<0.1*mean || MainActivity.oldMean>5*mean) MainActivity.oldMean=mean;
         else MainActivity.oldMean = mean*MainActivity.lambda+(1-MainActivity.lambda)*MainActivity.oldMean;
 
         MainActivity.distanceCorrection = new float[numChannels];
@@ -307,13 +333,11 @@ public class MainService extends Service {
             filter2Out = 0;
             peakEnv = 0.0f;
             peakNum = 0;
-            beatPulse = false;
             beatTrigger = false;
-            prevBeatPulse = false;
-            MainActivity.oData[c] = new float[myData.length / numChannels];
-            MainActivity.specData[c] = new float[myData.length / numChannels];
-            for (int i = 0; i < myData.length / numChannels; i += numChannels) {
-                input = (float)myData[i * numChannels + c] / Short.MAX_VALUE;
+            MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
+            MainActivity.specData[c] = new float[MainActivity.sData.length / numChannels];
+            for (int i = 0; i < MainActivity.sData.length / numChannels; i ++) {
+                input = (float)MainActivity.sData[i * numChannels + c] / Short.MAX_VALUE;
 
                 // Step 1 : 2nd order low pass filter (made of two 1st order RC filter)
                 filter1Out = filter1Out + (kBeatFilter * (input - filter1Out));
@@ -336,16 +360,21 @@ public class MainService extends Service {
                 {
                     if( peakEnv > MainActivity.oldMean ){
                         beatTrigger = true;
-                        if(peakNum<5) MainActivity.peakIndex[c][peakNum] = i;
-                        peakNum++;
+                        if(peakNum<5) {
+                            MainActivity.peakIndex[c][peakNum] = i;
+                            peakNum++;
+                        }
                     }
                 }
                 else
                 {
                     if( peakEnv < MainActivity.oldMean*0.5 ){
                         beatTrigger = false;
-                        MainActivity.peakWidth[c][peakNum-1] = (i-MainActivity.peakIndex[c][peakNum-1]) * distFactor;
-                        MainActivity.midPeak[c][peakNum-1] = (i+MainActivity.peakIndex[c][peakNum-1])/2;
+                        if(peakNum<=5) {
+                            MainActivity.peakWidth[c][peakNum - 1] = (i - MainActivity.peakIndex[c][peakNum - 1]) * distFactor;
+                            MainActivity.midPeak[c][peakNum - 1] = (i + MainActivity.peakIndex[c][peakNum - 1]) / 2;
+                        }
+
                     }
                 }
 
@@ -403,6 +432,19 @@ public class MainService extends Service {
 
 
     private void updateGraphsBroadcast() {
+        if(!SettingsActivity.getApplyEnvCheck()) {
+            MainActivity.oData = new float[numChannels][];
+            for (int c = 0; c < numChannels; c++) {
+                MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
+                for (int i = 0; i < MainActivity.sData.length / numChannels; i ++) {
+                    MainActivity.oData[c][i] = MainActivity.sData[i * numChannels + c];
+                }
+            }
+
+            ft.process(MainActivity.sData);
+            MainActivity.specData = this.ft.getPowerMagnitudes();
+        }
+
         Intent intent = new Intent(MainActivity.mainActivity_NotificationStr);
         //intent.putExtra(RESULT, result);
         sendBroadcast(intent);
@@ -472,6 +514,7 @@ public class MainService extends Service {
     void genTone() {
 
         double instfreq = 0, numerator;
+        testFreq = SettingsActivity.getTestFreqValue();
         //append=false;
         //writeToFile("", false);
         for (int i = 0; i < numSample; i++) {

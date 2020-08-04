@@ -54,13 +54,13 @@
             android:title="@string/wave_type"
             android:entries="@array/wave_types"
             android:entryValues="@array/wave_types_values"/>
-<!--
         <EditTextPreference
-            android:key="@string/max_loops_key"
-            android:title="@string/max_loops"
+            android:key="@string/test_freq_key"
+            android:title="@string/test_freq"
             android:inputType="numberDecimal"
             android:digits="0123456789"
             android:useSimpleSummaryProvider="true" />
+<!--
 
         <ListPreference
             android:key="@string/loop_key"

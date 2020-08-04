@@ -7,7 +7,7 @@ public class FFTBandPassFilter
     private FourierTransform ft = null;
 
     /** Hanning window audio processor */
-    private BandPassFilter bp = null;
+    private HanningAudioProcessor hap = null;
 
     /** Hanning window audio processor */
     private int filterSize = 1024;
@@ -31,7 +31,7 @@ public class FFTBandPassFilter
     public FFTBandPassFilter( final int highPassHz, final int lowPassHz, final float nyqRate, final int numChannels )
     {
         this.ft = new FourierTransform(numChannels);
-        this.bp = new BandPassFilter( filterSize, highPassHz/nyqRate, lowPassHz/nyqRate, numChannels, true);
+        this.hap = new HanningAudioProcessor( 1024 );
         this.highPassHz = highPassHz;
         this.lowPassHz = lowPassHz;
         this.nyqRate = nyqRate;
@@ -61,26 +61,11 @@ public class FFTBandPassFilter
 
 
 
-    final public short[] processSample( final short[] sample, final double sampleRateKhz, final int numChannels ) throws Exception
+    final public short[] processSample( final short[] sample, final double sampleRateKhz, final int numChannels )
     {
         // Perform an FFT on the filter.
-        this.ft.process( this.bp.getWindowedWeightTable());
-        final float[][] transformedFilterData = this.ft.getLastFFT();
-
-        this.ft.process( sample );
-        final float[][] transformedInputData = this.ft.getLastFFT();
-
-        final float[][] transformedData = new float[numChannels][];
-
-        for( int c = 0; c < numChannels; c++ )
-        {
-            transformedData[c] = new float[ transformedInputData[c].length ];
-            for( int i = 0; i < transformedInputData[c].length; i++ )
-            {
-                transformedData[c][i] = transformedInputData[c][i] *  transformedFilterData[c][i];
-            }
-        }
-
+        this.ft.process( this.hap.process(MyUtils.convertShortDouble(sample),numChannels));
+        final float[][] transformedData = this.ft.getLastFFT();
 
         // Number of channels to process
         final int nc = transformedData.length;

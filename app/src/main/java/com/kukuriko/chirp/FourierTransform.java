@@ -188,6 +188,44 @@ public class FourierTransform
         return sb;
     }
 
+
+
+    public double[] inverseTransformToDouble( final float[][] transformedData )
+    {
+        // Check the data has something in it.
+        if( transformedData == null || transformedData.length == 0 )
+            throw new IllegalArgumentException( "No data in data chunk" );
+
+        // Check that the transformed data has the same number of channels
+        // as the data we've been given.
+        if( transformedData.length != this.numChannels )
+            throw new IllegalArgumentException( "Number of channels in audio " +
+                    "format does not match given data." );
+
+        // The number of channels
+        final int nChannels = transformedData.length;
+
+        // The Fourier transformer we're going to use
+        final FloatFFT_1D fft = new FloatFFT_1D( transformedData[0].length/2 );
+
+        // Create a sample buffer to put the time domain data into
+        final double[] sb = new double[transformedData[0].length/2 *	nChannels];
+
+        // Perform the inverse on each channel
+        for( int channel = 0; channel < transformedData.length; channel++ )
+        {
+            // Convert frequency domain back to time domain
+            fft.complexInverse( transformedData[channel], true );
+
+            // Set the data in the buffer
+            for( int x = 0; x < transformedData[channel].length/2; x++ )
+                sb[( x*nChannels+channel)]= (short)transformedData[channel][x] ;
+        }
+
+        // Return a new sample chunk
+        return sb;
+    }
+
     /**
      * 	Get the last processed FFT frequency data.
      * 	@return The fft of the last processed window
