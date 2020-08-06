@@ -468,7 +468,7 @@ public class MainActivity extends AppCompatActivity {
         chart2.setMinimumHeight(0);
         if(myData != null) {
             drawImageLineChart(chart1, myData[0]);
-            if(numChannels>1)
+            if(MainService.getNumChannels()>1)
                 drawImageLineChart(chart2, myData[1]);
         }
     }
@@ -480,7 +480,7 @@ public class MainActivity extends AppCompatActivity {
         chart4.setMinimumHeight(0);
         if(myData != null) {
             drawImageLineChart(chart3, myData[0]);
-            if(numChannels>1)
+            if(MainService.getNumChannels()>1)
                 drawImageLineChart(chart4, myData[1]);
         }
     }
@@ -654,8 +654,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("drawImage", "Update UI");
                 //if (isToggleBMP) drawImageBmp();
                 //if (isToggleFragment) drawImageFragment();
-                if (SettingsActivity.getDrawWaveCheck()) drawWaveChart(oData);
-                if (SettingsActivity.getDrawSpecCheck()) drawSpectrogramChart(specData);
+                if (SettingsActivity.getDrawWaveCheck()) {
+                    drawWaveChart(oData);
+                }
+                if (SettingsActivity.getDrawSpecCheck()) {
+                    drawSpectrogramChart(specData);
+                }
 
             }
         });

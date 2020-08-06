@@ -24,6 +24,10 @@ import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
+import com.kukuriko.chirp.FFT.FFT;
+import com.kukuriko.chirp.FFT.Spectrum;
+import com.kukuriko.chirp.FFT.windows.RectangularWindow;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,17 +41,19 @@ public class MainService extends Service {
 
     private boolean isRecording=false;
     private static final String TAG = "MainService";
-    private final int duration = 500;
-    private final int maxRange = 10;
-    private final int speedOfSound = 343;
-    private final int maxDelayRTT = 2*(1000*maxRange)/speedOfSound;
-    private final int SAMPLING_RATE_IN_HZ = 192000;
+    private static int duration = 500;
+    private static int maxRange = 10;
+    private static int speedOfSound = 343;
+    private static int maxDelayRTT = 2*(1000*maxRange)/speedOfSound;
+    private static int SAMPLING_RATE_IN_HZ = 192000;
     private int filterSize = 1024;
-    private final double nyqRate = SAMPLING_RATE_IN_HZ/2.0;
-    private final int numSample = duration * SAMPLING_RATE_IN_HZ / 1000;
-    private final int numChannels = 2;
+    private static double nyqRate = SAMPLING_RATE_IN_HZ/2.0;
+    private static int numSample = duration * SAMPLING_RATE_IN_HZ / 1000;
+    private static int numChannelsIn = 1;
+    private static int numChannels = 2; //
+    private static int bytesPerSample = 2;
 
-    private final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO; // same as (CHANNEL_IN_LEFT | CHANNEL_IN_RIGHT)
+    private final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO; // // same as (CHANNEL_IN_LEFT | CHANNEL_IN_RIGHT)
     // other MIC combinations: CHANNEL_IN_FRONT_BACK , CHANNEL_IN_X_AXIS , CHANNEL_IN_Y_AXIS , CHANNEL_IN_Z_AXIS
     private final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int RECORDER_BPP = 16; //bits per sample
@@ -88,6 +94,10 @@ public class MainService extends Service {
     private FourierTransform ft;
     private FFTBandPassFilter bpfft;
     private BandPassFilter bp;
+
+    public static int getNumChannels() {
+        return numChannels;
+    }
 
     public enum WaveType {
         SINE,
@@ -145,7 +155,7 @@ public class MainService extends Service {
 
         MainActivity.allData = new ArrayBlockingQueue<>(MainActivity.maxLoops);
         MainActivity.sample = new double[numSample];
-        MainActivity.generatedSnd = new byte[numChannels * numSample];
+        MainActivity.generatedSnd = new byte[numChannelsIn * numSample * bytesPerSample];
         accDetection = 0;
         audioFilePath = this.getFilesDir()+"/voice8K16bitstereo.wav";
         imageFilePath = this.getFilesDir()+"/voice8K16bitstereo.png";
@@ -218,10 +228,10 @@ public class MainService extends Service {
 
             calculateCurrentLoopVal();
 
-            if(loop%100==0) {
-                updateGraphsBroadcast();
-                loop=0;
-            }
+            //if(loop%100==0) {
+            //    updateGraphsBroadcast();
+            //    loop=0;
+            //}
 
             loop++;
             break;
@@ -443,6 +453,21 @@ public class MainService extends Service {
 
             ft.process(MainActivity.sData);
             MainActivity.specData = this.ft.getPowerMagnitudes();
+
+            /*
+            FFT myFFT = new FFT();
+            RectangularWindow myWindow = new RectangularWindow();
+            Spectrum[] mySpectrum = new Spectrum[numChannels];
+            myFFT.forward(MyUtils.convertFloatDouble(MainActivity.oData[0]),SAMPLING_RATE_IN_HZ, myWindow);
+            mySpectrum[0] = myFFT.getPowerSpectrum();
+            MainActivity.specData = new float[numChannels][];
+            MainActivity.specData[0] = MyUtils.convertDoubleFloat(mySpectrum[0].array());
+            if(numChannels>1) {
+                myFFT.forward(MyUtils.convertFloatDouble(MainActivity.oData[1]), SAMPLING_RATE_IN_HZ, myWindow);
+                mySpectrum[1] = myFFT.getPowerSpectrum();
+                MainActivity.specData[1] = MyUtils.convertDoubleFloat(mySpectrum[1].array());
+            }
+            */
         }
 
         Intent intent = new Intent(MainActivity.mainActivity_NotificationStr);
@@ -721,11 +746,11 @@ public class MainService extends Service {
         recorder.read(MainActivity.sData, 0, BUFFER_SIZE);
 
         MainActivity.bData = short2byte(MainActivity.sData);
-
+        outputFile=SettingsActivity.getFileCheck();
         if (outputFile) {
             audioFile = new File(audioFilePath);
-            //writeWaveFile(audioFile, AUDIO_FORMAT, bData);
-            writeToFile(Arrays.toString(MainActivity.sData).replace(",", "\n"), false, audioFile);
+            writeWaveFile(audioFile, AUDIO_FORMAT, MainActivity.bData);
+            //writeToFile(Arrays.toString(MainActivity.sData).replace(",", "\n"), false, audioFile);
         }
 
         stopRecording();

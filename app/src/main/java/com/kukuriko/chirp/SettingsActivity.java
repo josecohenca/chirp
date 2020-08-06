@@ -29,6 +29,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static String APPLY_ENV_KEY;
     private static String DROPDOWN_KEY;
     private static String TESTFREQ_KEY;
+    private static String FILE_KEY;
     //private static String LOOP_KEY;
     //private static String MAX_LOOP_KEY;
     private static boolean drawWaveCheck = false;
@@ -36,6 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static boolean applyFilterCheck = false;
     private static boolean applyConvCheck = false;
     private static boolean applyEnvCheck = false;
+    private static boolean fileCheck = false;
     private static int dropDownValue = 0;
     private static int testFreqValue = 4000;
     //private static int iterationNumber = 0;
@@ -43,6 +45,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static boolean getDrawWaveCheck(){
         return drawWaveCheck;
+    }
+
+    public static boolean getFileCheck(){
+        return fileCheck;
     }
 
     public static boolean getDrawSpecCheck(){
@@ -88,6 +94,7 @@ public class SettingsActivity extends AppCompatActivity {
         APPLY_CONV_KEY=getString(R.string.apply_convolution_key);
         APPLY_ENV_KEY=getString(R.string.apply_envelope_key);
         DROPDOWN_KEY=getString(R.string.wave_type_key);
+        FILE_KEY=getString(R.string.file_key);
         TESTFREQ_KEY=getString(R.string.test_freq_key);
         //LOOP_KEY=getString(R.string.loop_key);
         //MAX_LOOP_KEY=getString(R.string.max_loops_key);
@@ -111,6 +118,10 @@ public class SettingsActivity extends AppCompatActivity {
             Preference drawWave = findPreference(DRAW_WAVE_KEY);
             drawWave.setDefaultValue(drawWaveCheck);
             bindPreferenceSummaryToValueBoolean(drawWave,false);
+
+            Preference file = findPreference(FILE_KEY);
+            file.setDefaultValue(fileCheck);
+            bindPreferenceSummaryToValueBoolean(file,false);
 
             Preference drawSpec = findPreference(DRAW_SPEC_KEY);
             drawSpec.setDefaultValue(drawSpecCheck);
@@ -227,6 +238,8 @@ public class SettingsActivity extends AppCompatActivity {
                     applyConvCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(APPLY_ENV_KEY)) {
                     applyEnvCheck = ((Boolean) newValue).booleanValue();
+                } else if (preference.getKey().equals(FILE_KEY)) {
+                    fileCheck = ((Boolean) newValue).booleanValue();
                 }
 
 

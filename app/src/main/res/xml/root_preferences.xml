@@ -70,7 +70,9 @@
 
     <PreferenceCategory app:title="@string/file_header">
 
-        <SwitchPreferenceCompat
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summary="@string/file"
             android:key="@string/file_key"
             android:title="@string/file" />
 
