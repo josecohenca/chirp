@@ -364,5 +364,9 @@ public class FourierTransform
     {
         this.padToNextPowerOf2 = padToNextPowerOf2;
     }
+
+    public double binToHz(final int binIndex, final float sampleRate, final int fftSize) {
+        return binIndex * sampleRate / (double) fftSize;
+    }
 }
 

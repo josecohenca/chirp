@@ -1,5 +1,7 @@
 package com.kukuriko.chirp;
 
+import android.graphics.Bitmap;
+
 public class MyUtils {
 
     public static double calculateMean(double numArray[]) {
@@ -89,5 +91,23 @@ public class MyUtils {
 
         return out;
     }
+
+
+    public static Bitmap bitmapFromArray(int[][] pixels2d){
+        int width = pixels2d.length;
+        int height = pixels2d[0].length;
+        int[] pixels = new int[width * height];
+        int pixelsIndex = 0;
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                pixels[pixelsIndex] = pixels2d[i][j];
+                pixelsIndex ++;
+            }
+        }
+        return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
+    }
+
 
 }

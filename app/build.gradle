@@ -40,6 +40,8 @@ dependencies {
     implementation 'com.github.Semantive:waveform-android:v1.2a'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.github.wendykierp:JTransforms:3.1'
+    // https://mvnrepository.com/artifact/com.github.fracpete/musicg
+    implementation group: 'com.github.fracpete', name: 'musicg', version: '1.4.2.2'
     //implementation('org.openimaj:audio-processing:1.3.9') {
     //    exclude group: 'colt', module: 'colt'
     //    exclude group: 'com.esotericsoftware.kryo', module: 'kryo'

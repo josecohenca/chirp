@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -27,6 +28,10 @@ import androidx.core.app.NotificationCompat;
 import com.kukuriko.chirp.FFT.FFT;
 import com.kukuriko.chirp.FFT.Spectrum;
 import com.kukuriko.chirp.FFT.windows.RectangularWindow;
+import com.kukuriko.chirp.jlibrosa.JLibrosa;
+import com.musicg.wave.Wave;
+import com.musicg.wave.WaveHeader;
+import com.musicg.wave.extension.Spectrogram;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,8 +46,8 @@ public class MainService extends Service {
 
     private boolean isRecording=false;
     private static final String TAG = "MainService";
-    private static int duration = 500;
-    private static int maxRange = 10;
+    private static int duration = 50;
+    private static int maxRange = 7;
     private static int speedOfSound = 343;
     private static int maxDelayRTT = 2*(1000*maxRange)/speedOfSound;
     private static int SAMPLING_RATE_IN_HZ = 192000;
@@ -94,6 +99,9 @@ public class MainService extends Service {
     private FourierTransform ft;
     private FFTBandPassFilter bpfft;
     private BandPassFilter bp;
+    private JLibrosa jLibrosa;
+
+    private HanningAudioProcessor hap;
 
     public static int getNumChannels() {
         return numChannels;
@@ -160,12 +168,14 @@ public class MainService extends Service {
         audioFilePath = this.getFilesDir()+"/voice8K16bitstereo.wav";
         imageFilePath = this.getFilesDir()+"/voice8K16bitstereo.png";
 
+        hap = new HanningAudioProcessor( 1024 );
         // Start foreground service.
         startForeground(FOREGROUND_ID, notification);
         Log.i(TAG, "Start foreground");
 
         mNotificationManager.notify(FOREGROUND_ID, notification);
 
+        jLibrosa = new JLibrosa();
         ft = new FourierTransform(numChannels);
         bpfft = new FFTBandPassFilter((int)freq2,(int)freq1,(float)nyqRate,numChannels);
         bp = new BandPassFilter( filterSize, (float)((freq2+guardFreq)/nyqRate), (float)((freq1-guardFreq)/nyqRate), numChannels, true);
@@ -221,6 +231,13 @@ public class MainService extends Service {
 
             try {
                 threadPlay.join();
+
+                try {
+                    Thread.sleep(maxDelayRTT);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 threadRecord.join();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -275,6 +292,35 @@ public class MainService extends Service {
     private void calculateCurrentLoopVal(){
 
         MainActivity.sData = MainActivity.allData.peek();
+
+        MainActivity.oData = new float[numChannels][];
+        for (int c = 0; c < numChannels; c++) {
+            MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
+            for (int i = 0; i < MainActivity.sData.length / numChannels; i ++) {
+                MainActivity.oData[c][i] = MainActivity.sData[i * numChannels + c];
+            }
+        }
+
+        //MainActivity.melData = jLibrosa.generateMelSpectroGram(MainActivity.oData[0]);
+        WaveHeader wh = new WaveHeader();
+        wh.setBitsPerSample(16);
+        wh.setChannels(2);
+        wh.setAudioFormat(1);
+        wh.setSampleRate(SAMPLING_RATE_IN_HZ);
+        Wave wave = null;
+        try {
+            wave = new Wave(wh,MainActivity.bData);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+
+        Spectrogram spectrogram = wave.getSpectrogram();
+
+        GraphicRender render = new GraphicRender();
+        // render.setHorizontalMarker(1);
+        // render.setVerticalMarker(1);
+        MainActivity.melData = spectrogram.getAbsoluteSpectrogramData();
+        MainActivity.melImage = render.renderSpectrogram(spectrogram);
 
         if (SettingsActivity.getApplyFilterCheck()) applyFilter();
         if (SettingsActivity.getApplyConvCheck()) applyCorrelation();
@@ -443,13 +489,7 @@ public class MainService extends Service {
 
     private void updateGraphsBroadcast() {
         if(!SettingsActivity.getApplyEnvCheck()) {
-            MainActivity.oData = new float[numChannels][];
-            for (int c = 0; c < numChannels; c++) {
-                MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
-                for (int i = 0; i < MainActivity.sData.length / numChannels; i ++) {
-                    MainActivity.oData[c][i] = MainActivity.sData[i * numChannels + c];
-                }
-            }
+
 
             ft.process(MainActivity.sData);
             MainActivity.specData = this.ft.getPowerMagnitudes();
@@ -560,6 +600,9 @@ public class MainService extends Service {
             //writeToFile(s.toString()+"\n", true);
         }
         int idx = 0;
+
+        MainActivity.sample = hap.process(MainActivity.sample,1);
+
         for (final double dVal :  MainActivity.sample) {
             // scale to maximum amplitude
             final short val = (short) ((dVal * 32767)); // max positive sample for signed 16 bit integers is 32767

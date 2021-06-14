@@ -87,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     protected static float[][] specData;
     protected static float[][] oData;
 
+    protected static double[][] melData;
+    protected static Bitmap melImage;
 
     protected static float obstacleSpeed = 0.5f;
 
@@ -485,6 +487,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    private void drawMelChart(){
+        if(melImage != null) {
+            myImage.setImageBitmap(melImage);
+        }
+    }
+
     private void drawImageLineChart(LineChart chart, float[] data){
         setupChartStyle(chart);
 
@@ -509,6 +518,7 @@ public class MainActivity extends AppCompatActivity {
         chart.setMinimumHeight(chartSize);
         //chart.invalidate();
     }
+
 
     private void drawImageBarChart(BarChart chart, float[] data){
         setupChartStyle(chart);
@@ -586,7 +596,7 @@ public class MainActivity extends AppCompatActivity {
         chart2 = findViewById(R.id.chart2);
         chart3 = findViewById(R.id.chart3);
         chart4 = findViewById(R.id.chart4);
-        //myImage = findViewById(R.id.imageView1);
+        myImage = findViewById(R.id.iv);
 
         List<String> list = new ArrayList<>();
         for(int i=0; i<maxLoops;i++) {
