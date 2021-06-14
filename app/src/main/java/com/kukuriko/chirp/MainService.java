@@ -314,7 +314,7 @@ public class MainService extends Service {
             e1.printStackTrace();
         }
 
-        Spectrogram spectrogram = wave.getSpectrogram();
+        Spectrogram spectrogram = wave.getSpectrogram(2048,2);
 
         GraphicRender render = new GraphicRender();
         // render.setHorizontalMarker(1);
