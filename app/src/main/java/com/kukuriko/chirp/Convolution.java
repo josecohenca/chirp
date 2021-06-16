@@ -55,10 +55,8 @@ public class Convolution {
         int n = x.length;
 
         // compute FFT of each sequence
-        ft.process(x);
-        float[][] fx = ft.getLastFFT();
-        ft.process(y);
-        float[][] fy = ft.getLastFFT();
+        float[][] fx = ft.process(x, true);
+        float[][] fy = ft.process(y, true);
 
         // point-wise multiply
         float[][] fz = new float[nc][n];

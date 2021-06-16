@@ -46,14 +46,14 @@ public class MainService extends Service {
 
     private boolean isRecording=false;
     private static final String TAG = "MainService";
-    private static int duration = 50;
-    private static int maxRange = 7;
+    private static int duration;
+    private static int maxRange = 10;
     private static int speedOfSound = 343;
     private static int maxDelayRTT = 2*(1000*maxRange)/speedOfSound;
     private static int SAMPLING_RATE_IN_HZ = 192000;
-    private int filterSize = 1024;
+    private int filterSize = 2048;
     private static double nyqRate = SAMPLING_RATE_IN_HZ/2.0;
-    private static int numSample = duration * SAMPLING_RATE_IN_HZ / 1000;
+    private static int numSample;
     private static int numChannelsIn = 1;
     private static int numChannels = 2; //
     private static int bytesPerSample = 2;
@@ -63,10 +63,10 @@ public class MainService extends Service {
     private final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int RECORDER_BPP = 16; //bits per sample
     private final float floatScale = 1 << (RECORDER_BPP - 1);
-    private final int recordingDuration = duration + maxDelayRTT;
-    private final int BUFFER_SIZE = recordingDuration * numChannels * SAMPLING_RATE_IN_HZ / 1000;
+    private static int recordingDuration;
+    private static int BUFFER_SIZE;
 
-    double freq1 = 8000;
+    double freq1 = 18000;
     double freq2 = 23000;
     double testFreq = freq1;//8000;
     double guardFreq = 100;
@@ -139,7 +139,6 @@ public class MainService extends Service {
             mNotificationManager.createNotificationChannel(mChannel);
         }
 
-
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(), 0);
 
         // Set the info for the views that show in the notification panel.
@@ -161,6 +160,12 @@ public class MainService extends Service {
     public int onStartCommand(Intent intent, int flags, final int startId) {
         Log.i(TAG, "Service onStartCommand");
 
+        testFreq = SettingsActivity.getTestFreqValue();
+        duration = SettingsActivity.getTestDurationValue();
+        numSample = duration * SAMPLING_RATE_IN_HZ / 1000;
+        recordingDuration = 2 * duration + maxDelayRTT;
+        BUFFER_SIZE = recordingDuration * numChannels * SAMPLING_RATE_IN_HZ / 1000;
+
         MainActivity.allData = new ArrayBlockingQueue<>(MainActivity.maxLoops);
         MainActivity.sample = new double[numSample];
         MainActivity.generatedSnd = new byte[numChannelsIn * numSample * bytesPerSample];
@@ -175,9 +180,9 @@ public class MainService extends Service {
 
         mNotificationManager.notify(FOREGROUND_ID, notification);
 
-        jLibrosa = new JLibrosa();
+        //jLibrosa = new JLibrosa();
         ft = new FourierTransform(numChannels);
-        bpfft = new FFTBandPassFilter((int)freq2,(int)freq1,(float)nyqRate,numChannels);
+        bpfft = new FFTBandPassFilter((int)(freq2+guardFreq),(int)(freq1-guardFreq),(float)nyqRate,numChannels);
         bp = new BandPassFilter( filterSize, (float)((freq2+guardFreq)/nyqRate), (float)((freq1-guardFreq)/nyqRate), numChannels, true);
 
         isRecording=true;
@@ -189,7 +194,7 @@ public class MainService extends Service {
         });
         startRecording.start();
 
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
     }
 
 
@@ -220,24 +225,18 @@ public class MainService extends Service {
                     playSound();
                 }
             });
-            threadPlay.start();
 
             Thread threadRecord = new Thread(new Runnable() {
                 public void run() {
                     startRecording();
                 }
             });
+
+            threadPlay.start();
             threadRecord.start();
 
             try {
                 threadPlay.join();
-
-                try {
-                    Thread.sleep(maxDelayRTT);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
                 threadRecord.join();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -293,6 +292,8 @@ public class MainService extends Service {
 
         MainActivity.sData = MainActivity.allData.peek();
 
+        if (SettingsActivity.getApplyFilterCheck()) applyFilter();
+
         MainActivity.oData = new float[numChannels][];
         for (int c = 0; c < numChannels; c++) {
             MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
@@ -301,10 +302,21 @@ public class MainService extends Service {
             }
         }
 
+
+        MainActivity.bData = short2byte(MainActivity.sData);
+        outputFile=SettingsActivity.getFileCheck();
+        if (outputFile) {
+            audioFile = new File(audioFilePath);
+            writeWaveFile(audioFile, AUDIO_FORMAT, MainActivity.bData);
+            //writeToFile(Arrays.toString(MainActivity.sData).replace(",", "\n"), false, audioFile);
+        }
+
+        if (SettingsActivity.getApplyConvCheck()) applyCorrelation();
+
         //MainActivity.melData = jLibrosa.generateMelSpectroGram(MainActivity.oData[0]);
         WaveHeader wh = new WaveHeader();
-        wh.setBitsPerSample(16);
-        wh.setChannels(2);
+        wh.setBitsPerSample(RECORDER_BPP);
+        wh.setChannels(numChannels);
         wh.setAudioFormat(1);
         wh.setSampleRate(SAMPLING_RATE_IN_HZ);
         Wave wave = null;
@@ -322,8 +334,6 @@ public class MainService extends Service {
         MainActivity.melData = spectrogram.getAbsoluteSpectrogramData();
         MainActivity.melImage = render.renderSpectrogram(spectrogram);
 
-        if (SettingsActivity.getApplyFilterCheck()) applyFilter();
-        if (SettingsActivity.getApplyConvCheck()) applyCorrelation();
         if (SettingsActivity.getApplyEnvCheck()){
             accDetection = MainActivity.detectionLambda*accDetection + (1-MainActivity.detectionLambda)*(applyEnvelope() ? 1 : 0);
 
@@ -339,15 +349,24 @@ public class MainService extends Service {
     private void applyFilter(){
         //MainActivity.sData = bp.process( MainActivity.sData, numChannels );
 
-        MainActivity.sData = bpfft.processSample( MainActivity.sData, SAMPLING_RATE_IN_HZ, numChannels );
+        //MainActivity.sData = bpfft.processSample( MainActivity.sData, SAMPLING_RATE_IN_HZ, numChannels );
+        MainActivity.sData = bp.process( MainActivity.sData, numChannels );
     }
 
     private void applyCorrelation(){
-        //MainActivity.sData = MyUtils.convertDoubleShort(Convolution.correlate(MyUtils.convertShortDouble(MainActivity.sData),
-        //        MyUtils.convertShortDouble(byte2short(MainActivity.generatedSnd)), numChannels));
         // apply fft correlation
-        MainActivity.sData = MyUtils.convertDoubleShort(Convolution.fftLinearConvolution(MyUtils.convertShortDouble(MainActivity.sData),
+        //MainActivity.cData = MyUtils.convertDoubleShort(Convolution.fftLinearConvolution(MyUtils.convertShortDouble(MainActivity.sData),
+        //        MyUtils.convertShortDouble(byte2short(MainActivity.generatedSnd)), numChannels));
+        MainActivity.cData = MyUtils.convertDoubleShort(Convolution.correlate(MyUtils.convertShortDouble(MainActivity.sData),
                 MyUtils.convertShortDouble(byte2short(MainActivity.generatedSnd)), numChannels));
+
+        MainActivity.cDataf = new float[numChannels][];
+        for (int c = 0; c < numChannels; c++) {
+            MainActivity.cDataf[c] = new float[MainActivity.cData.length / numChannels];
+            for (int i = 0; i < MainActivity.cData.length / numChannels; i ++) {
+                MainActivity.cDataf[c][i] = MainActivity.cData[i * numChannels + c];
+            }
+        }
     }
 
 
@@ -366,7 +385,7 @@ public class MainService extends Service {
         float beatRelease = (float) Math.exp( -1.0f / (SAMPLING_RATE_IN_HZ * BEAT_RTIME) );
         float distFactor = speedOfSound/SAMPLING_RATE_IN_HZ;
         int peakNum;
-        double mean = MyUtils.calculateMean(MyUtils.convertShortDouble(MainActivity.sData));
+        double mean = MyUtils.calculateMean(MyUtils.convertShortDouble(MainActivity.cData));
 
         if(MainActivity.oldMean==0 || MainActivity.oldMean<0.1*mean || MainActivity.oldMean>5*mean) MainActivity.oldMean=mean;
         else MainActivity.oldMean = mean*MainActivity.lambda+(1-MainActivity.lambda)*MainActivity.oldMean;
@@ -381,8 +400,8 @@ public class MainService extends Service {
         MainActivity.movingObstacleAngle = new float[5];
         MainActivity.movingObstacleCollision = new boolean[5];
 
-        MainActivity.oData = new float[numChannels][];
-        MainActivity.specData = new float[numChannels][];
+        MainActivity.eDataf = new float[numChannels][];
+        MainActivity.peakData = new float[numChannels][];
 
         for( int c = 0; c < numChannels; c++ ) {
             filter1Out = 0;
@@ -390,10 +409,10 @@ public class MainService extends Service {
             peakEnv = 0.0f;
             peakNum = 0;
             beatTrigger = false;
-            MainActivity.oData[c] = new float[MainActivity.sData.length / numChannels];
-            MainActivity.specData[c] = new float[MainActivity.sData.length / numChannels];
-            for (int i = 0; i < MainActivity.sData.length / numChannels; i ++) {
-                input = (float)MainActivity.sData[i * numChannels + c] / Short.MAX_VALUE;
+            MainActivity.eDataf[c] = new float[MainActivity.cData.length / numChannels];
+            MainActivity.peakData[c] = new float[MainActivity.cData.length / numChannels];
+            for (int i = 0; i < MainActivity.cData.length / numChannels; i ++) {
+                input = (float)MainActivity.cData[i * numChannels + c] / Short.MAX_VALUE;
 
                 // Step 1 : 2nd order low pass filter (made of two 1st order RC filter)
                 filter1Out = filter1Out + (kBeatFilter * (input - filter1Out));
@@ -409,7 +428,7 @@ public class MainService extends Service {
                     peakEnv += (1.0f - beatRelease) * EnvIn;
                 }
 
-                MainActivity.oData[c][i] = peakEnv; // or EnvIn ?
+                MainActivity.eDataf[c][i] = peakEnv; // or EnvIn ?
 
                 // Step 3 : Schmitt trigger
                 if( !beatTrigger )
@@ -439,9 +458,9 @@ public class MainService extends Service {
                 //if( (beatTrigger) && (!prevBeatPulse) ) {
                 //    beatPulse = true;
                 //}
-                //prevBeatPulse = beatTrigger;
+                //prevBeatPulse = beatTrigger;specData
 
-                MainActivity.specData[c][i] = (beatTrigger ? peakNum : 0);
+                MainActivity.peakData[c][i] = (beatTrigger ? peakNum : 0);
             }
 
             MainActivity.distanceCorrection[c] = (MainActivity.peakIndex[c][1] - MainActivity.peakIndex[c][0]) * distFactor;
@@ -491,8 +510,8 @@ public class MainService extends Service {
         if(!SettingsActivity.getApplyEnvCheck()) {
 
 
-            ft.process(MainActivity.sData);
-            MainActivity.specData = this.ft.getPowerMagnitudes();
+            float[][] ftData = ft.process(MainActivity.sData, true);
+            MainActivity.specData = this.ft.getPowerMagnitudes(ftData);
 
             /*
             FFT myFFT = new FFT();
@@ -577,9 +596,9 @@ public class MainService extends Service {
 
 
     void genTone() {
+        testFreq = SettingsActivity.getTestFreqValue();
 
         double instfreq = 0, numerator;
-        testFreq = SettingsActivity.getTestFreqValue();
         //append=false;
         //writeToFile("", false);
         for (int i = 0; i < numSample; i++) {
@@ -648,6 +667,7 @@ public class MainService extends Service {
     private void startRecording() {
         AudioManager aManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
         String prop = aManager.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
+
         //int maxSampleRate = getMaxSupportedSampleRate();
 
         //int bufferSizeFactor = 2;
@@ -787,14 +807,6 @@ public class MainService extends Service {
         MainActivity.sData = new short[BUFFER_SIZE];
 
         recorder.read(MainActivity.sData, 0, BUFFER_SIZE);
-
-        MainActivity.bData = short2byte(MainActivity.sData);
-        outputFile=SettingsActivity.getFileCheck();
-        if (outputFile) {
-            audioFile = new File(audioFilePath);
-            writeWaveFile(audioFile, AUDIO_FORMAT, MainActivity.bData);
-            //writeToFile(Arrays.toString(MainActivity.sData).replace(",", "\n"), false, audioFile);
-        }
 
         stopRecording();
 

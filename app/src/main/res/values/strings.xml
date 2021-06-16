@@ -25,6 +25,9 @@
     <string name="test_freq">Test Freq</string>
     <string name="test_freq_key">test_freq_key</string>
 
+    <string name="test_dur">Test Duration</string>
+    <string name="test_dur_key">test_dur_key</string>
+
     <string name="remote_service_started">Service started</string>
     <string name="local_service_label">Obstacle Detection Service</string>
 

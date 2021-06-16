@@ -2,13 +2,17 @@ package com.kukuriko.chirp;
 
 
 import android.graphics.Bitmap;
+import android.os.Environment;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 
 import com.musicg.wave.Wave;
 import com.musicg.wave.extension.Spectrogram;
+
+import static com.kukuriko.chirp.BuildConfig.DEBUG;
 
 public class GraphicRender{
 
@@ -99,14 +103,25 @@ public class GraphicRender{
                         } else if (y >= height) {
                             y = height - 1;
                         }
-                        bufferedImage.setPixel(i, y, 0);
+                        bufferedImage.setPixel(i, y, 0xff << 24 | 0);
                     }
                     else{
-                        bufferedImage.setPixel(i, y, 255);
+                        bufferedImage.setPixel(i, y, 0xff << 24 | 0xff<<16 | 0xff<<8 | 0xff);
                     }
                 }
             }
             // end render wave form image
+
+            if(DEBUG) {
+                File path = MainActivity.myContext.getFilesDir();
+                File file = new File(path, "debug_wave.png"); // the File to save
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    bufferedImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                    // PNG is a lossless format, the compression factor (100) is ignored
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
             return bufferedImage;
             // end export image
@@ -154,10 +169,22 @@ public class GraphicRender{
                         else{
                             value=255-(int)(spectrogramData[i][j]*255);
                         }
-                        bufferedImage.setPixel(i, height-1-j, value<<16|value<<8|value);
+                        bufferedImage.setPixel(i, height-1-j, 0xff << 24 | value<<16 | value<<8 | value);
                     }
                 }
             }
+
+            if(DEBUG) {
+                File path = MainActivity.myContext.getFilesDir();
+                File file = new File(path, "debug_mel.png"); // the File to save
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    bufferedImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                    // PNG is a lossless format, the compression factor (100) is ignored
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             return bufferedImage;
         }
         else{

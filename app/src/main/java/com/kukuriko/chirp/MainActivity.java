@@ -7,18 +7,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Point;
-import android.media.AudioAttributes;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioRecord;
-import android.media.AudioTrack;
-import android.media.MediaRecorder;
 import android.os.Build;
-import android.os.Handler;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
@@ -31,14 +24,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.Spinner;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -48,25 +36,16 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 //import org.openimaj.image.DisplayUtilities;
 //import org.openimaj.image.ImageUtilities;
 //import org.openimaj.image.MBFImage;
 //import org.openimaj.video.xuggle.XuggleAudio;
 
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class MainActivity extends AppCompatActivity {
@@ -84,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
 
     protected static byte[] bData;
     protected static short[] sData;
+    protected static short[] cData;
+    protected static float[][] cDataf;
+    protected static short[] eData;
+    protected static float[][] eDataf;
+    protected static float[][] peakData;
     protected static float[][] specData;
     protected static float[][] oData;
 
@@ -108,13 +92,27 @@ public class MainActivity extends AppCompatActivity {
     protected static boolean[] movingObstacleCollision;
     protected static int[][] prevPeakIndex;
 
+    protected static Context myContext;
 
+    protected static boolean drawWaveCheck = false;
+    protected static boolean drawSpecCheck = false;
+    protected static boolean applyFilterCheck = false;
+    protected static boolean applyConvCheck = false;
+    protected static boolean applyEnvCheck = false;
+    protected static boolean fileCheck = false;
+    protected static int dropDownValue = 0;
+    protected static int testFreqValue = 4000;
+    protected static int testDurationValue = 50;
 
     private LineChart chart1;
     private LineChart chart2;
+    private LineChart chart2a;
+    private LineChart chart2b;
+    private LineChart chart2c;
+    private LineChart chart2d;
     private LineChart chart3;
     private LineChart chart4;
-    private ImageView myImage;
+    private ImageView ivMelImage;
 
     private Button btStart;
     private Button btStop;
@@ -270,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("drawImageBmp", "Finished process");
 
-        myImage.setImageBitmap(bitmap);
+        ivMelImage.setImageBitmap(bitmap);
     }
 
     private void drawImageFragment(){
@@ -475,6 +473,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void drawCorrChart(float[][] myData){
+        chart2a.clear();
+        chart2b.clear();
+        chart2a.setMinimumHeight(0);
+        chart2b.setMinimumHeight(0);
+        if(myData != null) {
+            drawImageLineChart(chart2a, myData[0]);
+            if(MainService.getNumChannels()>1)
+                drawImageLineChart(chart2b, myData[1]);
+        }
+    }
+
+
+    private void drawEnvChart(float[][] myData){
+        chart2c.clear();
+        chart2d.clear();
+        chart2c.setMinimumHeight(0);
+        chart2d.setMinimumHeight(0);
+        if(myData != null) {
+            drawImageLineChart(chart2c, myData[0]);
+            if(MainService.getNumChannels()>1)
+                drawImageLineChart(chart2d, myData[1]);
+        }
+    }
+
     private void drawSpectrogramChart(float[][] myData){
         chart3.clear();
         chart4.clear();
@@ -488,9 +511,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void drawMelChart(){
+    private void drawMelChart(Bitmap inImage){
         if(melImage != null) {
-            myImage.setImageBitmap(melImage);
+            //Bitmap b = BitmapFactory.decodeByteArray(inImage , 0, inImage.getByteCount());
+            ivMelImage.setImageBitmap(Bitmap.createScaledBitmap(inImage, 300, 600, false));
         }
     }
 
@@ -594,9 +618,13 @@ public class MainActivity extends AppCompatActivity {
         //loopSpinner = findViewById(R.id.loop_spinner);
         chart1 = findViewById(R.id.chart1);
         chart2 = findViewById(R.id.chart2);
+        chart2a = findViewById(R.id.chart2a);
+        chart2b = findViewById(R.id.chart2b);
+        chart2c = findViewById(R.id.chart2c);
+        chart2d = findViewById(R.id.chart2d);
         chart3 = findViewById(R.id.chart3);
         chart4 = findViewById(R.id.chart4);
-        myImage = findViewById(R.id.iv);
+        ivMelImage = findViewById(R.id.iv);
 
         List<String> list = new ArrayList<>();
         for(int i=0; i<maxLoops;i++) {
@@ -629,7 +657,7 @@ public class MainActivity extends AppCompatActivity {
         //toggleConvolveWithOrig.setChecked(false);
         //toggleEnvelope.setChecked(false);
 
-
+        myContext = getApplicationContext();
 
         btStart.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -667,8 +695,15 @@ public class MainActivity extends AppCompatActivity {
                 if (SettingsActivity.getDrawWaveCheck()) {
                     drawWaveChart(oData);
                 }
+                if (SettingsActivity.getApplyConvCheck()) {
+                    drawCorrChart(cDataf);
+                }
+                if (SettingsActivity.getApplyEnvCheck()) {
+                    drawEnvChart(eDataf);
+                }
                 if (SettingsActivity.getDrawSpecCheck()) {
-                    drawSpectrogramChart(specData);
+                    //drawSpectrogramChart(specData);
+                    drawMelChart(melImage);
                 }
 
             }
@@ -677,6 +712,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     protected void onResume() {
+        registerReceiver(receiver, new IntentFilter(mainActivity_NotificationStr));
         super.onResume();
     }
 

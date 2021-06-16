@@ -3,7 +3,7 @@
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
         maven { url "https://jitpack.io" }
         //maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
         //maven { url "http://maven.openimaj.org" }
@@ -18,7 +18,7 @@ buildscript {
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
         maven { url "https://jitpack.io" }
         //maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts" }
         //maven { url "http://maven.openimaj.org" }

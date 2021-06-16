@@ -119,10 +119,30 @@
                 android:layout_width="fill_parent"
                 android:layout_below="@+id/chart1"/>
             <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart2a"
+                android:layout_height="match_parent"
+                android:layout_width="fill_parent"
+                android:layout_below="@+id/chart2"/>
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart2b"
+                android:layout_height="match_parent"
+                android:layout_width="fill_parent"
+                android:layout_below="@+id/chart2a"/>
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart2c"
+                android:layout_height="match_parent"
+                android:layout_width="fill_parent"
+                android:layout_below="@+id/chart2b"/>
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart2d"
+                android:layout_height="match_parent"
+                android:layout_width="fill_parent"
+                android:layout_below="@+id/chart2c"/>
+            <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/chart3"
                 android:layout_height="match_parent"
                 android:layout_width="fill_parent"
-                android:layout_below="@+id/chart2" />
+                android:layout_below="@+id/chart2d" />
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/chart4"
                 android:layout_height="match_parent"
@@ -130,9 +150,10 @@
                 android:layout_below="@+id/chart3" />
             <ImageView
                 android:id="@+id/iv"
-                android:layout_height="match_parent"
-                android:layout_width="fill_parent"
-                android:contentDescription="TODO" />
+                android:layout_height="600dp"
+                android:layout_width="300dp"
+                android:contentDescription="TODO"
+                android:layout_below="@+id/chart4" />
         </RelativeLayout >
     </ScrollView>
 </RelativeLayout>

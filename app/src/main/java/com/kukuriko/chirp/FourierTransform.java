@@ -6,7 +6,7 @@ import org.jtransforms.fft.FloatFFT_1D;
 public class FourierTransform
 {
     /** The last generated FFT */
-    private float[][] lastFFT = null;
+    //private float[][] lastFFT = null;
 
     /** The scaling factor to apply prior to the FFT */
     private float scalingFactor = 1;
@@ -15,7 +15,7 @@ public class FourierTransform
     private boolean padToNextPowerOf2 = true;
 
     /** Whether to divide the real return parts by the size of the input */
-    private final boolean normalise = true;
+    //private final boolean normalise = false;
 
     private int numChannels;
 
@@ -33,7 +33,7 @@ public class FourierTransform
      *	@param sb The sample buffer
      *	@return The sample buffer
      */
-    public short[] process( final short[] sb )
+    public float[][] process( final short[] sb , boolean normalise)
     {
         // The number of channels we need to process
         final int nChannels = this.numChannels;
@@ -49,31 +49,31 @@ public class FourierTransform
         final FloatFFT_1D fft = new FloatFFT_1D( nSamplesPerChannel );
 
         // Creates an FFT for each of the channels in turn
-        this.lastFFT = new float[nChannels][];
+        float[][] outFFT = new float[nChannels][];
         for( int c = 0; c < nChannels; c++ )
         {
             // Twice the length to account for imaginary parts
-            this.lastFFT[c] = new float[ sizeOfFFT*2 ];
+            outFFT[c] = new float[ sizeOfFFT*2 ];
 
             // Fill the array
             for( int x = 0; x < nSamplesPerChannel; x++ )
-                this.lastFFT[c][x*2] = sb[( x*nChannels+c )] * this.scalingFactor;
+                outFFT[c][x*2] = sb[( x*nChannels+c )] * this.scalingFactor;
 
 //			System.out.println( "FFT Input (channel "+c+"), length "+this.lastFFT[c].length+": " );
 //			System.out.println( Arrays.toString( this.lastFFT[c] ));
 
             // Perform the FFT (using jTransforms)
-            fft.complexForward( this.lastFFT[c] );
+            fft.complexForward( outFFT[c] );
 
 
 //			System.out.println( "FFT Output (channel "+c+"): " );
 //			System.out.println( Arrays.toString( this.lastFFT[c] ));
         }
 
-        if( this.normalise )
-            this.normaliseReals( sizeOfFFT );
+        if( normalise )
+            this.normaliseReals( outFFT, sizeOfFFT );
 
-        return sb;
+        return outFFT;
     }
 
     /**
@@ -81,7 +81,7 @@ public class FourierTransform
      *	@param sb The sample buffer
      *	@return The sample buffer
      */
-    public double[] process( final double[] sb )
+    public float[][] process( final double[] sb, boolean normalise )
     {
         // The number of channels we need to process
         final int nChannels = this.numChannels;
@@ -97,41 +97,41 @@ public class FourierTransform
         final FloatFFT_1D fft = new FloatFFT_1D( nSamplesPerChannel );
 
         // Creates an FFT for each of the channels in turn
-        this.lastFFT = new float[nChannels][];
+        float[][] outFFT = new float[nChannels][];
         for( int c = 0; c < nChannels; c++ )
         {
             // Twice the length to account for imaginary parts
-            this.lastFFT[c] = new float[ sizeOfFFT*2 ];
+            outFFT[c] = new float[ sizeOfFFT*2 ];
 
             // Fill the array
             for( int x = 0; x < nSamplesPerChannel; x++ )
-                this.lastFFT[c][x*2] = (float)sb[( x*nChannels+c )] * this.scalingFactor;
+                outFFT[c][x*2] = (float)sb[( x*nChannels+c )] * this.scalingFactor;
 
 //			System.out.println( "FFT Input (channel "+c+"), length "+this.lastFFT[c].length+": " );
 //			System.out.println( Arrays.toString( this.lastFFT[c] ));
 
             // Perform the FFT (using jTransforms)
-            fft.complexForward( this.lastFFT[c] );
-
-            if( this.normalise )
-                this.normaliseReals( sizeOfFFT );
+            fft.complexForward( outFFT[c] );
 
 //			System.out.println( "FFT Output (channel "+c+"): " );
 //			System.out.println( Arrays.toString( this.lastFFT[c] ));
         }
 
-        return sb;
+        if( normalise )
+            this.normaliseReals( outFFT, sizeOfFFT );
+
+        return outFFT;
     }
 
     /**
      * 	Divides the real parts of the last FFT by the given size
      *	@param size the divisor
      */
-    private void normaliseReals( final int size )
+    private void normaliseReals( float[][] inFFT, final int size )
     {
-        for( int c = 0; c < this.lastFFT.length; c++ )
-            for( int i = 0; i < this.lastFFT[c].length; i +=2 )
-                this.lastFFT[c][i] /= size;
+        for( int c = 0; c < inFFT.length; c++ )
+            for( int i = 0; i < inFFT[c].length; i +=2 )
+                inFFT[c][i] /= size;
     }
 
     /**
@@ -229,11 +229,12 @@ public class FourierTransform
     /**
      * 	Get the last processed FFT frequency data.
      * 	@return The fft of the last processed window
-     */
+
     public float[][] getLastFFT()
     {
         return this.lastFFT;
     }
+     */
 
     /**
      * 	Returns the magnitudes of the last FFT data. The length of the
@@ -242,16 +243,16 @@ public class FourierTransform
      *
      *	@return The magnitudes of the last FFT data.
      */
-    public float[][] getMagnitudes()
+    public float[][] getMagnitudes(float[][] lastFFT)
     {
-        final float[][] mags = new float[this.lastFFT.length][];
-        for( int c = 0; c < this.lastFFT.length; c++ )
+        final float[][] mags = new float[lastFFT.length][];
+        for( int c = 0; c < lastFFT.length; c++ )
         {
-            mags[c] = new float[ this.lastFFT[c].length/4 ];
-            for( int i = 0; i < this.lastFFT[c].length/4; i++ )
+            mags[c] = new float[ lastFFT[c].length/4 ];
+            for( int i = 0; i < lastFFT[c].length/4; i++ )
             {
-                final float re = this.lastFFT[c][i*2];
-                final float im = this.lastFFT[c][i*2+1];
+                final float re = lastFFT[c][i*2];
+                final float im = lastFFT[c][i*2+1];
                 mags[c][i] = (float)Math.sqrt( re*re + im*im );
             }
         }
@@ -267,16 +268,16 @@ public class FourierTransform
      *
      *	@return The magnitudes of the last FFT data.
      */
-    public float[][] getPowerMagnitudes()
+    public float[][] getPowerMagnitudes(float[][] lastFFT)
     {
-        final float[][] mags = new float[this.lastFFT.length][];
-        for( int c = 0; c < this.lastFFT.length; c++ )
+        final float[][] mags = new float[lastFFT.length][];
+        for( int c = 0; c < lastFFT.length; c++ )
         {
-            mags[c] = new float[ this.lastFFT[c].length/4 ];
-            for( int i = 0; i < this.lastFFT[c].length/4; i++ )
+            mags[c] = new float[ lastFFT[c].length/4 ];
+            for( int i = 0; i < lastFFT[c].length/4; i++ )
             {
-                final float re = this.lastFFT[c][i*2];
-                final float im = this.lastFFT[c][i*2+1];
+                final float re = lastFFT[c][i*2];
+                final float im = lastFFT[c][i*2+1];
                 mags[c][i] = 10f * (float)Math.log10( re*re + im*im );
             }
         }
@@ -292,16 +293,16 @@ public class FourierTransform
      *	@param scalar The scalar
      *	@return Normalised magnitudes.
      */
-    public float[][] getNormalisedMagnitudes( final float scalar )
+    public float[][] getNormalisedMagnitudes(float[][] lastFFT, final float scalar )
     {
-        final float[][] mags = new float[this.lastFFT.length][];
-        for( int c = 0; c < this.lastFFT.length; c++ )
+        final float[][] mags = new float[lastFFT.length][];
+        for( int c = 0; c < lastFFT.length; c++ )
         {
-            mags[c] = new float[ this.lastFFT[c].length/4 ];
-            for( int i = 0; i < this.lastFFT[c].length/4; i++ )
+            mags[c] = new float[ lastFFT[c].length/4 ];
+            for( int i = 0; i < lastFFT[c].length/4; i++ )
             {
-                final float re = this.lastFFT[c][i*2] * scalar;
-                final float im = this.lastFFT[c][i*2+1] * scalar;
+                final float re = lastFFT[c][i*2] * scalar;
+                final float im = lastFFT[c][i*2+1] * scalar;
                 mags[c][i] = re*re + im*im;
             }
         }
@@ -314,14 +315,14 @@ public class FourierTransform
      * 	the symmetrical part.
      *	@return The real numbers
      */
-    public float[][] getReals()
+    public float[][] getReals(float[][] lastFFT)
     {
-        final float[][] reals = new float[this.lastFFT.length][];
-        for( int c = 0; c < this.lastFFT.length; c++ )
+        final float[][] reals = new float[lastFFT.length][];
+        for( int c = 0; c < lastFFT.length; c++ )
         {
-            reals[c] = new float[ this.lastFFT[c].length/2 ];
-            for( int i = 0; i < this.lastFFT[c].length/2; i++ )
-                reals[c][i] = this.lastFFT[c][i*2];
+            reals[c] = new float[ lastFFT[c].length/2 ];
+            for( int i = 0; i < lastFFT[c].length/2; i++ )
+                reals[c][i] = lastFFT[c][i*2];
         }
 
         return reals;

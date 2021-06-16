@@ -10,6 +10,7 @@ import android.view.MenuItem;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
@@ -21,7 +22,8 @@ import androidx.preference.PreferenceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingsActivity extends AppCompatActivity {
+public class SettingsActivity extends AppCompatActivity
+        implements PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     private static String DRAW_WAVE_KEY;
     private static String DRAW_SPEC_KEY;
     private static String APPLY_FILTER_KEY;
@@ -29,50 +31,57 @@ public class SettingsActivity extends AppCompatActivity {
     private static String APPLY_ENV_KEY;
     private static String DROPDOWN_KEY;
     private static String TESTFREQ_KEY;
+    private static String TESTDUR_KEY;
     private static String FILE_KEY;
     //private static String LOOP_KEY;
     //private static String MAX_LOOP_KEY;
-    private static boolean drawWaveCheck = false;
-    private static boolean drawSpecCheck = false;
-    private static boolean applyFilterCheck = false;
-    private static boolean applyConvCheck = false;
-    private static boolean applyEnvCheck = false;
-    private static boolean fileCheck = false;
-    private static int dropDownValue = 0;
-    private static int testFreqValue = 4000;
+    //private static boolean drawWaveCheck = false;
+    //private static boolean drawSpecCheck = false;
+    //private static boolean applyFilterCheck = false;
+    //private static boolean applyConvCheck = false;
+    //private static boolean applyEnvCheck = false;
+    //private static boolean fileCheck = false;
+    //private static int dropDownValue = 0;
+    //private static int testFreqValue = 4000;
+    //private static int testDurationValue = 50;
     //private static int iterationNumber = 0;
     //private static int maxLoops = 10;
+    private static SharedPreferences p;
 
     public static boolean getDrawWaveCheck(){
-        return drawWaveCheck;
+        return MainActivity.drawWaveCheck;
     }
 
     public static boolean getFileCheck(){
-        return fileCheck;
+        return MainActivity.fileCheck;
     }
 
     public static boolean getDrawSpecCheck(){
-        return drawSpecCheck;
+        return MainActivity.drawSpecCheck;
     }
 
     public static boolean getApplyFilterCheck(){
-        return applyFilterCheck;
+        return MainActivity.applyFilterCheck;
     }
 
     public static boolean getApplyConvCheck(){
-        return applyConvCheck;
+        return MainActivity.applyConvCheck;
     }
 
     public static boolean getApplyEnvCheck(){
-        return applyEnvCheck;
+        return MainActivity.applyEnvCheck;
     }
 
     public static int getDropDownValue(){
-        return dropDownValue;
+        return MainActivity.dropDownValue;
     }
 
     public static int getTestFreqValue(){
-        return testFreqValue;
+        return MainActivity.testFreqValue;
+    }
+
+    public static int getTestDurationValue(){
+        return MainActivity.testDurationValue;
     }
 
     //public static int getIterationNumber(){
@@ -82,6 +91,25 @@ public class SettingsActivity extends AppCompatActivity {
     //public static int getMaxLoops(){
     //    return maxLoops;
     //}
+
+
+    @Override
+    public boolean onPreferenceStartFragment(PreferenceFragmentCompat caller, Preference pref) {
+        // Instantiate the new Fragment
+        final Bundle args = pref.getExtras();
+        final Fragment fragment = getSupportFragmentManager().getFragmentFactory().instantiate(
+                getClassLoader(),
+                pref.getFragment());
+        fragment.setArguments(args);
+        fragment.setTargetFragment(caller, 0);
+
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.settings, fragment)
+                .addToBackStack(null)
+                .commit();
+        setTitle(pref.getTitle());
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,8 +124,11 @@ public class SettingsActivity extends AppCompatActivity {
         DROPDOWN_KEY=getString(R.string.wave_type_key);
         FILE_KEY=getString(R.string.file_key);
         TESTFREQ_KEY=getString(R.string.test_freq_key);
+        TESTDUR_KEY=getString(R.string.test_dur_key);
         //LOOP_KEY=getString(R.string.loop_key);
         //MAX_LOOP_KEY=getString(R.string.max_loops_key);
+
+        p = PreferenceManager.getDefaultSharedPreferences(MainActivity.myContext);
 
         getSupportFragmentManager()
                 .beginTransaction()
@@ -116,36 +147,40 @@ public class SettingsActivity extends AppCompatActivity {
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
 
             Preference drawWave = findPreference(DRAW_WAVE_KEY);
-            drawWave.setDefaultValue(drawWaveCheck);
+            drawWave.setDefaultValue(MainActivity.drawWaveCheck);
             bindPreferenceSummaryToValueBoolean(drawWave,false);
 
             Preference file = findPreference(FILE_KEY);
-            file.setDefaultValue(fileCheck);
+            file.setDefaultValue(MainActivity.fileCheck);
             bindPreferenceSummaryToValueBoolean(file,false);
 
             Preference drawSpec = findPreference(DRAW_SPEC_KEY);
-            drawSpec.setDefaultValue(drawSpecCheck);
+            drawSpec.setDefaultValue(MainActivity.drawSpecCheck);
             bindPreferenceSummaryToValueBoolean(drawSpec,false);
 
             Preference applyFilter = findPreference(APPLY_FILTER_KEY);
-            applyFilter.setDefaultValue(applyFilterCheck);
+            applyFilter.setDefaultValue(MainActivity.applyFilterCheck);
             bindPreferenceSummaryToValueBoolean(applyFilter,false);
 
             Preference applyConvolution = findPreference(APPLY_CONV_KEY);
-            applyConvolution.setDefaultValue(applyConvCheck);
+            applyConvolution.setDefaultValue(MainActivity.applyConvCheck);
             bindPreferenceSummaryToValueBoolean(applyConvolution,false);
 
             Preference applyEnvelope = findPreference(APPLY_ENV_KEY);
-            applyEnvelope.setDefaultValue(applyEnvCheck);
+            applyEnvelope.setDefaultValue(MainActivity.applyEnvCheck);
             bindPreferenceSummaryToValueBoolean(applyEnvelope,false);
 
             Preference dropdown = findPreference(DROPDOWN_KEY);
-            dropdown.setDefaultValue(dropDownValue);
+            dropdown.setDefaultValue(MainActivity.dropDownValue);
             bindPreferenceSummaryToValueString(dropdown,"1");
 
             Preference testFreqPref = findPreference(TESTFREQ_KEY);
-            testFreqPref.setDefaultValue(testFreqValue);
+            testFreqPref.setDefaultValue(MainActivity.testFreqValue);
             bindPreferenceSummaryToValueString(testFreqPref,"4000");
+
+            Preference testDurPref = findPreference(TESTDUR_KEY);
+            testDurPref.setDefaultValue(MainActivity.testDurationValue);
+            bindPreferenceSummaryToValueString(testDurPref,"50");
 
             //ListPreference iteration = findPreference(LOOP_KEY);
             //setListPreferenceData(iteration);
@@ -229,17 +264,17 @@ public class SettingsActivity extends AppCompatActivity {
                 // using RingtoneManager.
                 CheckBoxPreference cbPreference = (CheckBoxPreference) preference;
                 if (preference.getKey().equals(DRAW_WAVE_KEY)) {
-                    drawWaveCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.drawWaveCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(DRAW_SPEC_KEY)) {
-                    drawSpecCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.drawSpecCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(APPLY_FILTER_KEY)) {
-                    applyFilterCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.applyFilterCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(APPLY_CONV_KEY)) {
-                    applyConvCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.applyConvCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(APPLY_ENV_KEY)) {
-                    applyEnvCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.applyEnvCheck = ((Boolean) newValue).booleanValue();
                 } else if (preference.getKey().equals(FILE_KEY)) {
-                    fileCheck = ((Boolean) newValue).booleanValue();
+                    MainActivity.fileCheck = ((Boolean) newValue).booleanValue();
                 }
 
 
@@ -247,7 +282,12 @@ public class SettingsActivity extends AppCompatActivity {
                 if (preference.getKey().equals(TESTFREQ_KEY)) {
                     // update the changed gallery name to summary filed
                     preference.setSummary(stringValue);
-                    testFreqValue = Integer.parseInt(stringValue);
+                    MainActivity.testFreqValue = Integer.parseInt(stringValue);
+                }
+                else if(preference.getKey().equals(TESTDUR_KEY)) {
+                    // update the changed gallery name to summary filed
+                    preference.setSummary(stringValue);
+                    MainActivity.testDurationValue = Integer.parseInt(stringValue);
                 }
             } else if (preference instanceof DropDownPreference) {
                 //if (preference.getKey().equals(MAX_LOOP_KEY)) {
@@ -255,7 +295,7 @@ public class SettingsActivity extends AppCompatActivity {
                 //    preference.setSummary(stringValue);
                 //    maxLoops=((Integer) newValue).intValue();
                 //}
-                dropDownValue=((Integer) newValue).intValue();
+                MainActivity.dropDownValue= (Integer) newValue;
             } else {
                 preference.setSummary(stringValue);
             }

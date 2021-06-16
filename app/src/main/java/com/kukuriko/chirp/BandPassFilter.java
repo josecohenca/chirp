@@ -63,7 +63,7 @@ public class BandPassFilter
         }
     }
 
-    protected void generatSquareFilterTableCache( final int length, final int nc )
+    protected void generateSquareFilterTableCache( final int length, final int nc )
     {
         final int ns = length;
         double alpha = 0.5 * (ns - 1);
@@ -84,7 +84,7 @@ public class BandPassFilter
         final int nc = this.numChannels;
 
         if( this.weightTable == null )
-            this.generatSquareFilterTableCache( this.requiredSampleSetSize/nc, nc );
+            this.generateSquareFilterTableCache( this.requiredSampleSetSize/nc, nc );
 
         return this.weightTable;
     }

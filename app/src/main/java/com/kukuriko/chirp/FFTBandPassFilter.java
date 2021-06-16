@@ -10,13 +10,13 @@ public class FFTBandPassFilter
     private HanningAudioProcessor hap = null;
 
     /** Hanning window audio processor */
-    private int filterSize = 1024;
+    private int filterSize = 2048;
 
     /** The lowest frequency at which audio will pass */
-    private int highPassHz = 500;
+    private int highPassHz = 23500;
 
     /** The highest frequency at which audio will pass */
-    private int lowPassHz = 5000;
+    private int lowPassHz = 17500;
 
     /** The Nyquist Rate */
     private float nyqRate = 5000;
@@ -31,7 +31,7 @@ public class FFTBandPassFilter
     public FFTBandPassFilter( final int highPassHz, final int lowPassHz, final float nyqRate, final int numChannels )
     {
         this.ft = new FourierTransform(numChannels);
-        this.hap = new HanningAudioProcessor( 1024 );
+        this.hap = new HanningAudioProcessor( filterSize );
         this.highPassHz = highPassHz;
         this.lowPassHz = lowPassHz;
         this.nyqRate = nyqRate;
@@ -61,11 +61,10 @@ public class FFTBandPassFilter
 
 
 
-    final public short[] processSample( final short[] sample, final double sampleRateKhz, final int numChannels )
+    final public short[] processSample( final short[] sample, final double sampleRateHz, final int numChannels )
     {
         // Perform an FFT on the filter.
-        this.ft.process( this.hap.process(MyUtils.convertShortDouble(sample),numChannels));
-        final float[][] transformedData = this.ft.getLastFFT();
+        final float[][] transformedData = this.ft.process(this.hap.process(MyUtils.convertShortDouble(sample), numChannels), true);
 
         // Number of channels to process
         final int nc = transformedData.length;
@@ -74,7 +73,7 @@ public class FFTBandPassFilter
         if( nc > 0 )
         {
             // The size of each bin in Hz (using the first channel as examplar)
-            final double binSize = (sampleRateKhz*1000) / (transformedData[0].length/2);
+            final double binSize = (sampleRateHz) / (transformedData[0].length/2);
 
             // Work out which bins we will wipe out
             final int highPassBin = (int)Math.floor( this.highPassHz / binSize );
@@ -85,7 +84,7 @@ public class FFTBandPassFilter
             {
                 // Process the samples
                 for( int i = 0; i < transformedData[c].length; i++ )
-                    if( i < highPassBin || i > lowPassBin )
+                    if( i < lowPassBin || i > highPassBin )
                         transformedData[c][i] = 0;
             }
 
